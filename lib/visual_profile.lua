@@ -1,6 +1,10 @@
 local VisualProfile = {}
 
 local GENERATED_GENERAL = "firered/generated/tilesets/general.png"
+-- TileRenderer selects the vanilla GBC per-tile palette bake by tileset record
+-- id. A FireRed true-colour atlas has no such vanilla tile-id contract, so it
+-- needs its own visual identity while maps retain their native OVERWORLD key.
+local GENERATED_GENERAL_ID = "FIRERED_KANTO_GENERAL"
 
 local function fail(message)
   error("FireRed importer: " .. message, 2)
@@ -44,6 +48,7 @@ function VisualProfile.applyGen1Outdoor(mod, imported)
   end
 
   mod.content.tilesets:patch("OVERWORLD", {
+    id = GENERATED_GENERAL_ID,
     image = GENERATED_GENERAL,
     imageWidth = atlas.imageWidth,
     imageHeight = atlas.imageHeight,

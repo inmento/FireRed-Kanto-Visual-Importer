@@ -194,6 +194,8 @@ do
   })
   check(applied and applied.image == "firered/generated/tilesets/general.png",
     "visual profile did not set generated image")
+  check(applied.id == "FIRERED_KANTO_GENERAL",
+    "visual profile did not isolate the imported atlas from vanilla GBC palette baking")
   check(applied.blocks[1][1] == 0 and applied.blocks[1][16] == 15,
     "visual profile did not map the visual block")
   check(base.walkable[1] == 0 and base.warpTiles[1] == 0 and base.grassTile == 0,

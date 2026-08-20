@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4 — Outdoor transition rendering correction
+
+This release fixes the white, fragmented outdoor screen that could appear when leaving an interior such as the player’s house. The importer had replaced the `OVERWORLD` atlas with FireRed true-colour tiles while retaining the vanilla `OVERWORLD` renderer identity. Gen1Recomp therefore attempted to apply its vanilla per-tile GBC palette bake to FireRed tile IDs that have no vanilla palette assignment.
+
+The imported atlas now uses a distinct renderer-only visual identity. Maps retain their original `OVERWORLD` key and all native collision, warps, outdoor behavior, encounters, and save data remain unchanged, but the renderer correctly treats the FireRed atlas as true-colour rather than as vanilla GBC artwork.
+
 ## 0.1.3 — Restored package identity for updates
 
 This release restores the importer’s original package ID, `FIRERED_KANTO_VISUALS`. Gen1Recomp identifies an installed mod by that manifest ID and installs it in a matching folder, so restoring the original identity allows installations from 0.1.0 and 0.1.1 to receive this update through the personal index. All Lua runtime module paths and regression coverage now use the restored uppercase identity.
