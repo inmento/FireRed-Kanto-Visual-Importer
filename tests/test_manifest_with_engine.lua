@@ -3,9 +3,9 @@ package.path = engine .. "/?.lua;" .. engine .. "/?/init.lua;" .. package.path
 
 local Manifest = require("src.mods.Manifest")
 local raw = {
-  id = "firered_kanto_visuals",
+  id = "FIRERED_KANTO_VISUALS",
   name = "FireRed Kanto Visual Importer",
-  version = "0.1.2",
+  version = "0.1.3",
   api = 2,
   entry = "main.lua",
   profile = "overhaul",
@@ -32,8 +32,8 @@ local raw = {
   },
 }
 
-local parsed = Manifest.validate(raw, "/test/firered_kanto_visuals")
-assert(parsed.id == "firered_kanto_visuals")
+local parsed = Manifest.validate(raw, "/test/FIRERED_KANTO_VISUALS")
+assert(parsed.id == "FIRERED_KANTO_VISUALS")
 assert(parsed.profile == "overhaul")
 assert(parsed.permissionSet.engine_internals)
 assert(#parsed.required_imports == 1)

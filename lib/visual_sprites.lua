@@ -5,10 +5,10 @@
 -- public content-record patches. It never changes species, trainer, battle,
 -- map, or save data.
 
-local Addresses = require("mods.firered_kanto_visuals.lib.addresses")
-local Reader = require("mods.firered_kanto_visuals.lib.gba_reader")
-local Lz77 = require("mods.firered_kanto_visuals.lib.lz77")
-local Targets = require("mods.firered_kanto_visuals.lib.visual_targets")
+local Addresses = require("mods.FIRERED_KANTO_VISUALS.lib.addresses")
+local Reader = require("mods.FIRERED_KANTO_VISUALS.lib.gba_reader")
+local Lz77 = require("mods.FIRERED_KANTO_VISUALS.lib.lz77")
+local Targets = require("mods.FIRERED_KANTO_VISUALS.lib.visual_targets")
 
 local VisualSprites = {}
 

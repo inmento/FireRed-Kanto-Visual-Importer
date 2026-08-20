@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3 — Restored package identity for updates
+
+This release restores the importer’s original package ID, `FIRERED_KANTO_VISUALS`. Gen1Recomp identifies an installed mod by that manifest ID and installs it in a matching folder, so restoring the original identity allows installations from 0.1.0 and 0.1.1 to receive this update through the personal index. All Lua runtime module paths and regression coverage now use the restored uppercase identity.
+
+> **Migration note:** If you manually installed the 0.1.2 lowercase package, remove that copy and install `FIRERED_KANTO_VISUALS-0.1.3.zip` once. Installations from 0.1.0 or 0.1.1 can update normally through the personal index.
+
 ## 0.1.2 — Launcher-compatible package identity
 
 This release corrects the importer’s package ID from uppercase `FIRERED_KANTO_VISUALS` to launcher-compatible lowercase `firered_kanto_visuals`. The code’s internal module paths and validation coverage now use that same identity, so the archive can be installed and updated through the personal index without a package-ID mismatch. The visual importer logic, required FireRed ROM verification, and corrected terrain-atlas bounds behavior are unchanged.
