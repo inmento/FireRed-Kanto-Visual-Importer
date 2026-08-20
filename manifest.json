@@ -1,0 +1,32 @@
+{
+  "id": "FIRERED_KANTO_VISUALS",
+  "name": "FireRed Kanto Visual Importer",
+  "version": "0.1.1",
+  "api": 2,
+  "entry": "main.lua",
+  "profile": "overhaul",
+  "category": "GRAPHICS",
+  "game_version": ">=0.2.3 <1.0.0",
+  "priority": 160,
+  "permissions": [
+    "engine_internals"
+  ],
+  "dependencies": [],
+  "optional_dependencies": [],
+  "conflicts": [],
+  "author": "inmento",
+  "description": "Imports player-provided FireRed v1.0 terrain and visual sprites while preserving the base game's maps, collision, warps, events, scripts, and gameplay.",
+  "required_imports": [
+    {
+      "id": "firered_rom",
+      "name": "Pokémon FireRed (English) ROM",
+      "description": "Required source ROM for FireRed Kanto Visual Importer. English FireRed v1.0 only.",
+      "file": "firered.gba",
+      "format": "raw",
+      "size": 16777216,
+      "md5": [
+        "e26ee0d44e809351c8ce2d73c7400cdd"
+      ]
+    }
+  ]
+}
