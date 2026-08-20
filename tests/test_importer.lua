@@ -4,22 +4,22 @@ local function load(relative)
   return assert(loadfile(ROOT .. "/" .. relative))()
 end
 
-package.preload["mods.FIRERED_KANTO_VISUALS.lib.addresses"] = function()
+package.preload["mods.firered_kanto_visuals.lib.addresses"] = function()
   return load("lib/addresses.lua")
 end
-package.preload["mods.FIRERED_KANTO_VISUALS.lib.gba_reader"] = function()
+package.preload["mods.firered_kanto_visuals.lib.gba_reader"] = function()
   return load("lib/gba_reader.lua")
 end
-package.preload["mods.FIRERED_KANTO_VISUALS.lib.lz77"] = function()
+package.preload["mods.firered_kanto_visuals.lib.lz77"] = function()
   return load("lib/lz77.lua")
 end
-package.preload["mods.FIRERED_KANTO_VISUALS.lib.general_tileset"] = function()
+package.preload["mods.firered_kanto_visuals.lib.general_tileset"] = function()
   return load("lib/general_tileset.lua")
 end
-package.preload["mods.FIRERED_KANTO_VISUALS.lib.cache"] = function()
+package.preload["mods.firered_kanto_visuals.lib.cache"] = function()
   return load("lib/cache.lua")
 end
-package.preload["mods.FIRERED_KANTO_VISUALS.lib.visual_profile"] = function()
+package.preload["mods.firered_kanto_visuals.lib.visual_profile"] = function()
   return load("lib/visual_profile.lua")
 end
 
@@ -65,12 +65,12 @@ local assets = {
 }
 package.preload["src.render.Assets"] = function() return assets end
 
-local Reader = require("mods.FIRERED_KANTO_VISUALS.lib.gba_reader")
-local Lz77 = require("mods.FIRERED_KANTO_VISUALS.lib.lz77")
-local Addresses = require("mods.FIRERED_KANTO_VISUALS.lib.addresses")
-local General = require("mods.FIRERED_KANTO_VISUALS.lib.general_tileset")
-local Cache = require("mods.FIRERED_KANTO_VISUALS.lib.cache")
-local VisualProfile = require("mods.FIRERED_KANTO_VISUALS.lib.visual_profile")
+local Reader = require("mods.firered_kanto_visuals.lib.gba_reader")
+local Lz77 = require("mods.firered_kanto_visuals.lib.lz77")
+local Addresses = require("mods.firered_kanto_visuals.lib.addresses")
+local General = require("mods.firered_kanto_visuals.lib.general_tileset")
+local Cache = require("mods.firered_kanto_visuals.lib.cache")
+local VisualProfile = require("mods.firered_kanto_visuals.lib.visual_profile")
 
 local function check(condition, message)
   if not condition then error(message or "check failed", 2) end

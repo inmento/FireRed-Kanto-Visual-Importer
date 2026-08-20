@@ -1,14 +1,14 @@
--- FireRed Kanto Visual Importer 0.1.0
+-- FireRed Kanto Visual Importer 0.1.2
 --
 -- This is deliberately a visual-only layer. It does not patch maps, collision,
 -- warp data, events, NPCs, scripts, encounters, saves, or base-game mechanics.
 
 local GameVersion = require("src.core.GameVersion")
-local Cache = require("mods.FIRERED_KANTO_VISUALS.lib.cache")
-local GeneralTileset = require("mods.FIRERED_KANTO_VISUALS.lib.general_tileset")
-local VisualProfile = require("mods.FIRERED_KANTO_VISUALS.lib.visual_profile")
-local VisualSprites = require("mods.FIRERED_KANTO_VISUALS.lib.visual_sprites")
-local VisualSpriteProfile = require("mods.FIRERED_KANTO_VISUALS.lib.visual_sprite_profile")
+local Cache = require("mods.firered_kanto_visuals.lib.cache")
+local GeneralTileset = require("mods.firered_kanto_visuals.lib.general_tileset")
+local VisualProfile = require("mods.firered_kanto_visuals.lib.visual_profile")
+local VisualSprites = require("mods.firered_kanto_visuals.lib.visual_sprites")
+local VisualSpriteProfile = require("mods.firered_kanto_visuals.lib.visual_sprite_profile")
 
 return function(mod)
   local playing = GameVersion.get()

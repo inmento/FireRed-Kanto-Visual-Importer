@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 — Launcher-compatible package identity
+
+This release corrects the importer’s package ID from uppercase `FIRERED_KANTO_VISUALS` to launcher-compatible lowercase `firered_kanto_visuals`. The code’s internal module paths and validation coverage now use that same identity, so the archive can be installed and updated through the personal index without a package-ID mismatch. The visual importer logic, required FireRed ROM verification, and corrected terrain-atlas bounds behavior are unchanged.
+
+> If you installed either earlier test ZIP manually, remove that test copy and install `firered_kanto_visuals-0.1.2.zip` once. Future updates use the corrected identity.
+
 ## 0.1.1 — Terrain-atlas bounds correction
 
 This update replaces the original test archive that could fail at startup with `Attempt to set out-of-range pixel!` in `lib/general_tileset.lua`. FireRed metatiles contain a 4×4 destination region, but the first archive treated their sixteen output tile IDs as though they formed one contiguous row. The generated atlas therefore advanced its Y coordinate incorrectly and could write past the image bounds.

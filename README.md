@@ -1,6 +1,6 @@
 # FireRed Kanto Visual Importer
 
-**Test build: 0.1.1**
+**Test build: 0.1.2**
 
 FireRed Kanto Visual Importer is a visual-only overhaul for Gen1Recomp. It reads terrain graphics, Pokémon front/back battle art, and trainer battle portraits from a player-provided, launcher-verified English Pokémon FireRed v1.0 ROM and applies them to the existing Kanto game.
 
@@ -18,13 +18,13 @@ The source ROM is selected through Gen1Recomp’s standard **Imported Files** fl
 
 ## Initial test scope
 
-Version 0.1.1 is an initial visual-import test. It replaces the original 0.1.0 ZIP, whose incorrect 4×4 metatile-atlas placement could fail during startup with an out-of-range pixel write. The 0.1.1 terrain decoder places each metatile on the correct 64-tile-wide atlas grid; no visual scope or gameplay behavior changed beyond that bounds correction. It decodes the FireRed **General** primary terrain tileset, normal-colour Pokémon front and back pictures for the existing 151 species, and mapped Kanto trainer battle portraits into private true-colour assets. It patches only the base game’s Gen 1 `OVERWORLD` tileset plus the visual image fields of existing Pokémon and trainer records. It retains the original Kanto map block grid, map dimensions, collisions, ledges, doors, warps, scripts, events, object placement, Pokémon data, and trainer battle data.
+Version 0.1.2 is an initial visual-import test. It uses the launcher-compatible lowercase package ID `firered_kanto_visuals`, replacing the earlier uppercase-ID test archives that could not update cleanly through an index. It also retains the corrected terrain decoder from 0.1.1: the original 0.1.0 ZIP could fail during startup with an out-of-range pixel write because it placed 4×4 metatiles incorrectly. The current decoder places each metatile on the correct 64-tile-wide atlas grid; no visual scope or gameplay behavior changed beyond the package-identity and bounds corrections. It decodes the FireRed **General** primary terrain tileset, normal-colour Pokémon front and back pictures for the existing 151 species, and mapped Kanto trainer battle portraits into private true-colour assets. It patches only the base game’s Gen 1 `OVERWORLD` tileset plus the visual image fields of existing Pokémon and trainer records. It retains the original Kanto map block grid, map dimensions, collisions, ledges, doors, warps, scripts, events, object placement, Pokémon data, and trainer battle data.
 
 The first profile is deliberately a **pipeline prototype**, not the final terrain-semantic remap. It preserves every Gen1 map and gameplay field, but maps the stable Gen1 Overworld block range onto the FireRed General metatile range numerically. That proves the verified import, GBA decoder, private renderer bridge, true-colour atlas, map draw path, movement, collision, and saves without pretending that every block is already semantically matched. Visual mismatches are expected in this build and are useful test evidence for the later grass/path/water/tree/ledge/building mapping table.
 
 ## Installation and test procedure
 
-Import the mod ZIP through Gen1Recomp, enable **FireRed Kanto Visual Importer**, select one of the supported FireRed ROMs when the launcher requests it, and start or continue a Gen 1 game. Do not test this release on Gold.
+If you installed an earlier test ZIP, remove it once and import `firered_kanto_visuals-0.1.2.zip`. Then enable **FireRed Kanto Visual Importer**, select one of the supported FireRed ROMs when the launcher requests it, and start or continue a Gen 1 game. Do not test this release on Gold.
 
 Please test the following areas after import: Pallet Town, Route 1, Viridian City, Route 2, Viridian Forest, Pewter City, a route with tall grass, a water route, an outdoor ledge, an outdoor building entrance, a wild battle, a trainer battle, a Gym Leader battle, and at least one save/continue cycle. Confirm that Pokémon front sprites, player-side back sprites, trainer portraits, movement, grass encounters, ledge jumps, door warps, NPC interaction, map connections, save/load, and disabling the mod remain normal.
 
