@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1 — Variable-size FireRed tileset repair
+
+This hotfix corrects the reason v0.2.0 could silently leave both initial map profiles on native Gen 1 artwork even after a verified FireRed v1.0 import and a full restart. The converter incorrectly treated every compressed FireRed secondary tileset as an exact 384-tile sheet. FireRed’s Pallet Town and Generic Building 1 sheets declare their real, smaller 4bpp size inside their LZ77 headers. The fixed-length check rejected those valid sheets before either profile could be registered.
+
+The reader now accepts the exact LZ77-declared tile count for compressed tilesets, while retaining strict 8×8 tile alignment and bounded source reads. It continues to validate source metatile references before rendering them. A new regression fixture proves that a compressed one-tile sheet can build a complete semantic profile without being rejected for not reaching the old fixed primary/secondary maximum.
+
+If **FR MAP VISUALS** is enabled and every requested profile is rejected, the importer now fails visibly in the Mod Manager with the first bounded-reader/converter diagnostic instead of silently displaying native terrain as if map visuals were active. A single rejected profile still fails closed independently while any valid profile remains usable.
+
 ## 0.2.0 — Map-aware Pallet and Red’s House visual profiles
 
 This release replaces the unsafe numeric FireRed terrain-preview experiment with the importer’s first proper **map-aware semantic conversion pipeline**. The pipeline reads only bounded FireRed English v1.0 layout/tileset ranges from the player’s verified local ROM, decodes the source into native 8×8 tiles and 16×16 metatiles, then rebuilds those visuals into fixed 4×4 Gen 1 tile blocks for explicit target maps.

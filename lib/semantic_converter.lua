@@ -105,18 +105,25 @@ local function decodeMetatiles(reader, address, count, label)
   return metatiles
 end
 
-local function decodeTiles(reader, header, count, label)
+local function decodeTiles(reader, header, fallbackCount, label)
   local offset = reader:offsetFromAddress(header.tiles, label .. " tiles")
   local bytes
   if header.compressed then
+    -- FireRed does not require every secondary tileset to contain 384 4bpp
+    -- tiles. Its LZ77 stream declares the exact source length. In particular,
+    -- the Pallet Town and Generic Building 1 secondary sheets are smaller than
+    -- the old fixed secondary maximum. Treating 384 as an exact length caused
+    -- both first semantic profiles to fail closed after a valid import.
     bytes = Lz77.decode(reader, offset, label .. " compressed tiles")
   else
-    bytes = reader:bytes(offset, count * 32, label .. " raw tiles")
+    -- Raw tilesets have no embedded size header. The fixed count is retained
+    -- only for that legacy path; all current semantic profiles are compressed.
+    bytes = reader:bytes(offset, fallbackCount * 32, label .. " raw tiles")
   end
-  if #bytes ~= count * 32 then
-    fail(('%s decoded to %d bytes; expected %d'):format(label, #bytes, count * 32))
+  if #bytes < 32 or #bytes % 32 ~= 0 then
+    fail(('%s decoded to an invalid %d-byte 4bpp tile sheet'):format(label, #bytes))
   end
-  return bytes
+  return bytes, #bytes / 32
 end
 
 local function decodeTileset(reader, address, kind, label)
@@ -129,12 +136,13 @@ local function decodeTileset(reader, address, kind, label)
   if header.secondary ~= expectedSecondary then
     fail(('%s has an unexpected primary/secondary tileset flag'):format(label))
   end
+  local tiles, decodedTileCount = decodeTiles(reader, header, tileCount, label)
   return {
     header = header,
-    tiles = decodeTiles(reader, header, tileCount, label),
+    tiles = tiles,
     palettes = decodePalettes(reader, header.palettes, paletteCount, label),
     metatiles = decodeMetatiles(reader, header.metatiles, metatileCount, label),
-    tileCount = tileCount,
+    tileCount = decodedTileCount,
     metatileCount = metatileCount,
   }
 end

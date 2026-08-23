@@ -94,10 +94,11 @@ local function fixtureRom()
   putU32(secondaryHeader + 8, pointer(secondaryPalettes))
   putU32(secondaryHeader + 12, pointer(secondaryMetatiles))
   putU32(secondaryHeader + 20, pointer(secondaryAttributes))
-  return rom, pointer(layout), pointer(mapHeader), pointer(primaryHeader), pointer(secondaryHeader)
+  return rom, pointer(layout), pointer(mapHeader), pointer(primaryHeader), pointer(secondaryHeader),
+    primaryTiles, secondaryTiles
 end
 
-local rom, layout, mapHeader, primaryHeader, secondaryHeader = fixtureRom()
+local rom, layout, mapHeader, primaryHeader, secondaryHeader, primaryTiles, secondaryTiles = fixtureRom()
 local profile = {
   id = "SYNTHETIC_PROFILE",
   map = "SYNTHETIC_MAP",
@@ -136,6 +137,25 @@ check(converted.walkable[1] == converted.grassTile,
   "walkability must follow the original collision tile class")
 check(converted.semanticTileCount == 1,
   "identical original collision classes must share one semantic tile")
+
+-- FireRed secondary sheets are not universally 384 tiles. Exercise the
+-- compressed path with one 8x8 tile (32 decoded bytes) in both tilesets; this
+-- must use the LZ77 header's actual length instead of a fixed primary/secondary
+-- maximum.
+local function compressedOneTile(value)
+  -- Header declares 32 bytes. Four flag-zero groups then supply eight literal
+  -- bytes each, yielding exactly one 8x8 4bpp tile.
+  local group = string.char(0) .. string.rep(string.char(value), 8)
+  return string.char(0x10, 32, 0, 0) .. string.rep(group, 4)
+end
+local compressedRom = put(put(rom, primaryTiles, compressedOneTile(0x11)),
+  secondaryTiles, compressedOneTile(0x22))
+-- Mark both fixture headers as compressed after their raw test has completed.
+compressedRom = put(compressedRom, primaryHeader - Addresses.ROM_BASE, string.char(1))
+compressedRom = put(compressedRom, secondaryHeader - Addresses.ROM_BASE, string.char(1))
+local compressedConverted = Converter.build(profile, compressedRom, targetMap, targetTileset)
+check(compressedConverted.tileCount == nil and #compressedConverted.blocks == 17,
+  "small compressed profile sheets must build without a fixed tile-count rejection")
 
 local bad = {}
 for key, value in pairs(profile) do bad[key] = value end

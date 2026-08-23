@@ -1,12 +1,12 @@
 # FireRed Kanto Visual Importer
 
-**Test build: 0.2.0**
+**Test build: 0.2.1**
 
 FireRed Kanto Visual Importer reads visual data from a **player-provided**, launcher-verified English Pokémon FireRed v1.0 ROM. It keeps all source data local to the player and never includes a FireRed ROM, extracted FireRed graphics, map data, or generated FireRed-derived atlas in this public repository or its release ZIP.
 
-Version 0.2.0 replaces the old unsafe numeric terrain experiment with a **map-aware semantic visual pipeline**. It keeps the existing Gen 1 map grid, collision, warps, ledges, grass, objects, scripts, encounters, progression, and saves authoritative, while rebuilding the visuals of explicitly supported maps from bounded FireRed layout and tileset data.
+Version 0.2.1 retains the **map-aware semantic visual pipeline** introduced in v0.2.0 and fixes its first runtime rejection: compressed FireRed tilesets now use the exact 4bpp tile count declared by their LZ77 stream, rather than an incorrect universal secondary-sheet maximum. It keeps the existing Gen 1 map grid, collision, warps, ledges, grass, objects, scripts, encounters, progression, and saves authoritative, while rebuilding the visuals of explicitly supported maps from bounded FireRed layout and tileset data.
 
-| Component | v0.2.0 behavior | Gameplay effect |
+| Component | v0.2.1 behavior | Gameplay effect |
 |---|---|---|
 | Pokémon battle art | Imported locally from the verified FireRed ROM. | Visual only. |
 | Trainer battle portraits | Imported locally from the verified FireRed ROM. | Visual only. |
@@ -20,7 +20,7 @@ FireRed has a 16×16 metatile system, while Gen1Recomp draws each Gen 1 map bloc
 
 That is why the prior Pallet Town screenshot could display a FireRed Pokémon Center over Red’s House: the numeric source block happened to be a Pokémon Center graphic, while the unchanged Gen 1 collision and warp were still those of Red’s House. The visual door was therefore not the real exit. Reducing the image scale could not correct that semantic mismatch.
 
-> **v0.2.0 rule:** the Gen 1 target map defines every coordinate and gameplay meaning. FireRed supplies only the visual cells for that existing target footprint.
+> **v0.2.1 rule:** the Gen 1 target map defines every coordinate and gameplay meaning. FireRed supplies only the visual cells for that existing target footprint.
 
 ## The map-aware pipeline
 
@@ -46,7 +46,7 @@ The launcher accepts only this exact source file through the standard **Imported
 
 Install or update **FireRed Kanto Visual Importer** through the personal index, enable it, and select the verified FireRed ROM when the launcher asks. The stable package ID is still `FIRERED_KANTO_VISUALS`, so users of older uppercase releases can update normally.
 
-**FR MAP VISUALS** is enabled by default. After installing v0.2.0, fully restart the game before testing. The first test route should be as follows:
+**FR MAP VISUALS** is enabled by default. After installing v0.2.1, fully restart the game before testing. If map visuals are enabled but **no** requested profile can build, the importer now fails visibly in the Mod Manager with the first precise reader/converter diagnostic instead of silently showing all-native terrain. The first test route should be as follows:
 
 1. Start in **Red’s House 1F** and walk through the visible downstairs door; the usual Gen 1 exit should work.
 2. Walk to the **Red’s House** entrance in **Pallet Town** and enter/leave it normally.

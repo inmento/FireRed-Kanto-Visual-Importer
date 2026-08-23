@@ -1,4 +1,4 @@
--- FireRed Kanto Visual Importer 0.2.0
+-- FireRed Kanto Visual Importer 0.2.1
 --
 -- One self-contained visual pipeline:
 --   1. verified local FireRed ROM reader;
@@ -57,6 +57,15 @@ return function(mod)
         print("FireRed importer: skipped semantic profile " .. profile.id .. " — " .. tostring(converted))
       end
     end
+  end
+
+  -- A map-visual request that produced no profiles is not a harmless native
+  -- fallback: it means every requested profile was rejected. Surface the first
+  -- bounded-reader/converter reason in the Mod Manager instead of silently
+  -- presenting native terrain as though FireRed map visuals were active.
+  if mapVisualsEnabled and #appliedProfiles == 0 and #profileErrors > 0 then
+    error("FireRed importer: no map visual profiles were applied. "
+      .. "First diagnostic: " .. profileErrors[1], 0)
   end
 
   for assetPath, imageData in pairs(visualSprites.assets) do

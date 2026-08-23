@@ -53,7 +53,9 @@ local function run(playing, enabled, failingProfile)
     return {
       build = function(profile, rom, map, tileset)
         calls.build[#calls.build + 1] = { id = profile.id, rom = rom, map = map, tileset = tileset }
-        if profile.id == failingProfile then error("profile checksum mismatch") end
+        local shouldFail = profile.id == failingProfile
+          or (type(failingProfile) == "table" and failingProfile[profile.id])
+        if shouldFail then error("profile checksum mismatch") end
         return { imageData = {}, profile = profile }
       end,
     }
@@ -170,6 +172,19 @@ do
   ready({ game = game })
   check(#game.fireredKantoVisuals.profiles == 1 and #game.fireredKantoVisuals.profileErrors == 1,
     "failure-closed diagnostics are incorrect")
+end
+
+-- If every requested profile is rejected, silently keeping all-native terrain
+-- misrepresents the active option. The loader must surface the first cause.
+do
+  local ok, err = pcall(run, "red", true, {
+    FIRERED_PALLET_TOWN = true,
+    FIRERED_REDS_HOUSE_1F = true,
+  })
+  check(not ok and tostring(err):find("no map visual profiles were applied", 1, true),
+    "all rejected profiles must produce a visible diagnostic")
+  check(tostring(err):find("profile checksum mismatch", 1, true),
+    "visible diagnostic must retain the bounded-reader/converter cause")
 end
 
 -- Gen 2 remains entirely outside this Gen 1 terrain pipeline.
