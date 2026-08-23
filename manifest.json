@@ -1,7 +1,7 @@
 {
   "id": "FIRERED_KANTO_VISUALS",
   "name": "FireRed Kanto Visual Importer",
-  "version": "0.3.0-rc.4",
+  "version": "0.3.0-rc.5",
   "api": 2,
   "entry": "main.lua",
   "profile": "overhaul",

@@ -21,6 +21,17 @@ end
 package.preload["mods.FIRERED_KANTO_VISUALS.lib.lz77"] = function()
   return load("lib/lz77.lua")
 end
+package.loaded["src.render.PaletteFX"] = nil
+package.preload["src.render.PaletteFX"] = function()
+  return {
+    usesGbcPack = function() return true end,
+    hasWorldTileset = function(id) return id == "SYNTHETIC_TILESET" end,
+    worldGroupColors = function()
+      return { { { 255, 255, 255 }, { 160, 96, 48 }, { 80, 48, 24 }, { 16, 32, 48 } } }
+    end,
+    worldGroupAt = function() return 0 end,
+  }
+end
 
 local ImageData = {}
 ImageData.__index = ImageData
@@ -244,6 +255,16 @@ check(baseOverrideConverted.blocks[1][5] == baseOverrideConverted.walkable[1]
     and baseOverrideConverted.blocks[1][13] == baseOverrideConverted.grassTile
     and baseOverrideConverted.blocks[1][15] == baseOverrideConverted.warpTiles[1],
   "base-overrides must retain every original movement-cell semantic role")
+
+-- Generated profile atlases are true-colour because they also contain FireRed
+-- pixels. When an active GBC palette context is supplied, copied Gen 1 base
+-- pixels must be pre-baked with the same four-shade palette family instead of
+-- remaining monochrome inside that true-colour atlas.
+local paletteConverted = Converter.build(baseOverrideProfile, rom, selectiveTargetMap,
+  targetTileset, { gameData = { maps = {} } })
+local pr, pg, pb = paletteConverted.imageData:getPixel(0, 0)
+check(pr == 16 / 255 and pg == 32 / 255 and pb == 48 / 255,
+  "palette-aware base copying must recolour preserved Gen 1 pixels in the generated atlas")
 
 local unknownMode = {}
 for key, value in pairs(layoutFitProfile) do unknownMode[key] = value end

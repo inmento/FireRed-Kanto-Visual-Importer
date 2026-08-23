@@ -1,4 +1,4 @@
--- FireRed Kanto Visual Importer 0.3.0-rc.4
+-- FireRed Kanto Visual Importer 0.3.0-rc.5
 --
 -- One self-contained visual pipeline:
 --   1. verified local FireRed ROM reader;
@@ -46,7 +46,13 @@ return function(mod)
     for _, profile in Profiles.each() do
       local baseMap = mod.content.maps:get(profile.map)
       local baseTileset = mod.content.tilesets:get(profile.expectedTarget.tileset)
-      local ok, converted = pcall(Converter.build, profile, rom, baseMap, baseTileset)
+      -- Generated profile atlases contain both FireRed true-colour pixels and
+      -- copied Gen 1 base pixels. Supply live game data when it is already
+      -- available so the converter can pre-bake base tiles with the same GBC
+      -- palette groups the renderer would normally apply to OVERWORLD.
+      local game = mod.game
+      local ok, converted = pcall(Converter.build, profile, rom, baseMap, baseTileset,
+        { gameData = game and game.data })
       if ok then
         SemanticProfile.apply(mod, profile, converted)
         appliedProfiles[#appliedProfiles + 1] = profile.id

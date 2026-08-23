@@ -51,8 +51,8 @@ local function run(playing, enabled, failingProfile)
   end
   package.preload["mods.FIRERED_KANTO_VISUALS.lib.semantic_converter"] = function()
     return {
-      build = function(profile, rom, map, tileset)
-        calls.build[#calls.build + 1] = { id = profile.id, rom = rom, map = map, tileset = tileset }
+      build = function(profile, rom, map, tileset, options)
+        calls.build[#calls.build + 1] = { id = profile.id, rom = rom, map = map, tileset = tileset, options = options }
         local shouldFail = profile.id == failingProfile
           or (type(failingProfile) == "table" and failingProfile[profile.id])
         if shouldFail then error("profile checksum mismatch") end
@@ -100,7 +100,9 @@ local function run(playing, enabled, failingProfile)
     OVERWORLD = { id = "OVERWORLD" },
     REDS_HOUSE_1 = { id = "REDS_HOUSE_1" },
   }
+  local liveGameData = { maps = {} }
   local mod = {
+    game = { data = liveGameData },
     options = {
       define = function(_, rows) defined = rows end,
       get = function(_, key)
@@ -125,13 +127,13 @@ local function run(playing, enabled, failingProfile)
     },
   }
   entry(mod)
-  return calls, defined, ready
+  return calls, defined, ready, liveGameData
 end
 
 -- The standard configuration applies the two explicit semantic profiles and
 -- leaves the normal FireRed battle-art import active.
 do
-  local calls, defined, ready = run("red", true)
+  local calls, defined, ready, liveGameData = run("red", true)
   check(defined and #defined == 1 and defined[1].key == "map_visuals",
     "map-visual option was not defined")
   check(defined[1].default == true, "map visuals must default on")
@@ -140,6 +142,9 @@ do
   check(#calls.build == 2 and calls.build[1].id == "FIRERED_PALLET_TOWN"
       and calls.build[2].id == "FIRERED_REDS_HOUSE_1F",
     "standard import did not build both initial semantic profiles")
+  check(calls.build[1].options and calls.build[1].options.gameData == liveGameData
+      and calls.build[2].options and calls.build[2].options.gameData == liveGameData,
+    "map conversion did not receive live game palette data")
   check(#calls.apply == 2, "both completed semantic profiles must be applied")
   local game = {}
   ready({ game = game })

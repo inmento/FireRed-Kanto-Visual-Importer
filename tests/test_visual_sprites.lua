@@ -1,4 +1,4 @@
-local ROOT = "/home/ubuntu/FireRed-Kanto-Visual-Importer"
+local ROOT = "/home/ubuntu/firered-kanto-visual-importer"
 
 local function load(relative)
   return assert(loadfile(ROOT .. "/" .. relative))()
@@ -111,7 +111,7 @@ check(decoded.assets["firered/generated/battle/front/bulbasaur.png"].width == 64
 do
   local pokemonBase = { baseStats = { hp = 45 }, types = { "GRASS", "POISON" }, spriteFront = "old-front" }
   local trainerBase = { name = "BROCK", parties = { {} }, pic = "old-trainer" }
-  local pokemonPatches, trainerPatches = {}, {}
+  local pokemonPatches, trainerPatches, scaleRegistrations = {}, {}, {}
   local mod = {
     content = {
       pokemon = {
@@ -121,6 +121,9 @@ do
       trainers = {
         get = function(_, id) return id == "OPP_BROCK" and trainerBase or nil end,
         patch = function(_, id, patch) trainerPatches[id] = patch end,
+      },
+      battle_sprite_scales = {
+        register = function(_, id, record) scaleRegistrations[id] = record end,
       },
     },
   }
@@ -134,6 +137,15 @@ do
     "Pokémon visual patch is incomplete")
   check(pokemonPatches.BULBASAUR.baseStats == nil and pokemonBase.baseStats.hp == 45,
     "Pokémon gameplay fields were changed")
+  local frontRecord = scaleRegistrations.firered_bulbasaur_front
+  check(frontRecord and frontRecord.path == "front.png" and frontRecord.scale == 0.875,
+    "FireRed front sprite scale registration is missing or incorrect: "
+      .. tostring(frontRecord) .. " / " .. tostring(frontRecord and frontRecord.path)
+      .. " / " .. tostring(frontRecord and frontRecord.scale))
+  check(scaleRegistrations.firered_bulbasaur_back
+      and scaleRegistrations.firered_bulbasaur_back.path == "back.png"
+      and scaleRegistrations.firered_bulbasaur_back.scale == 1.0,
+    "FireRed back sprite scale registration is missing or incorrect")
   check(trainerPatches.OPP_BROCK.pic == "brock.png" and trainerPatches.OPP_BROCK.trueColor == true,
     "trainer visual patch is incomplete")
   check(trainerPatches.MISSING == nil and trainerBase.parties[1] ~= nil,

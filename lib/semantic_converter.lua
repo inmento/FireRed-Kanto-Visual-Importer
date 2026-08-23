@@ -398,7 +398,37 @@ local function loadBaseAtlas(profile, base)
   return image
 end
 
-local function copyBaseBlock(atlas, baseAtlas, base, baseRow, left, top, label)
+-- A generated profile atlas is true-colour because it also holds decoded
+-- FireRed pixels. Copying a raw grayscale Gen 1 tile into that atlas would
+-- bypass Gen1Recomp's normal per-tileset GBC bake and leave it monochrome next
+-- to FireRed. When the live palette pack is available, pre-bake the copied
+-- base tile with the same palette-group data the renderer uses for OVERWORLD.
+local function basePaletteContext(profile, base, gameData)
+  if not gameData or type(base.id) ~= "string" then return nil end
+  local ok, palette = pcall(require, "src.render.PaletteFX")
+  if not ok or not palette or not palette.usesGbcPack or not palette.usesGbcPack()
+     or not palette.hasWorldTileset(base.id) then return nil end
+  local groupColors = palette.worldGroupColors(gameData, base.id, profile.map, nil)
+  if type(groupColors) ~= "table" then return nil end
+  return { palette = palette, groupColors = groupColors, tilesetId = base.id,
+    mapId = profile.map, tileColors = {} }
+end
+
+local function colorBasePixel(context, tile, r, g, b, a)
+  if not context or a <= 0 then return r, g, b, a end
+  local colors = context.tileColors[tile]
+  if colors == nil then
+    local group = context.palette.worldGroupAt(context.tilesetId, context.mapId, tile)
+    colors = group and context.groupColors[group + 1] or false
+    context.tileColors[tile] = colors
+  end
+  if not colors then return r, g, b, a end
+  local color = r > 0.83 and colors[1] or r > 0.5 and colors[2]
+    or r > 0.17 and colors[3] or colors[4]
+  return color[1] / 255, color[2] / 255, color[3] / 255, a
+end
+
+local function copyBaseBlock(atlas, baseAtlas, base, baseRow, left, top, label, paletteContext)
   local tilesPerRow = base.tilesPerRow or math.floor(baseAtlas:getWidth() / TILE_SIZE)
   if tilesPerRow < 1 then fail(label .. " target tileset image has no tile columns") end
   for index = 1, BLOCK_TILES do
@@ -413,6 +443,7 @@ local function copyBaseBlock(atlas, baseAtlas, base, baseRow, left, top, label)
     for y = 0, TILE_SIZE - 1 do
       for x = 0, TILE_SIZE - 1 do
         local r, g, b, a = baseAtlas:getPixel(sourceX + x, sourceY + y)
+        r, g, b, a = colorBasePixel(paletteContext, tile, r, g, b, a)
         atlas:setPixel(destinationX + x, destinationY + y, r, g, b, a)
       end
     end
@@ -435,7 +466,7 @@ local function targetBlockPosition(index)
   return tileBaseX * TILE_SIZE, tileBaseY * TILE_SIZE, tileBaseX, tileBaseY
 end
 
-local function composeProfileBlock(atlas, layout, primary, secondary, profile, targetMap, layoutCanvas, baseAtlas, targetX, targetY,
+local function composeProfileBlock(atlas, layout, primary, secondary, profile, targetMap, layoutCanvas, baseAtlas, basePalette, targetX, targetY,
     blockIndex, oldBlock, base, semanticState, semanticStart)
   local pixelX, pixelY, tileBaseX, tileBaseY = targetBlockPosition(blockIndex)
   local baseRow = base.blocks[(oldBlock or 0) + 1]
@@ -453,7 +484,7 @@ local function composeProfileBlock(atlas, layout, primary, secondary, profile, t
     -- deliberately prevents a whole foreign map layout from being compressed
     -- through an unrelated fixed Gen 1 footprint.
     copyBaseBlock(atlas, assert(baseAtlas, profile.id .. " base atlas is missing"), base,
-      baseRow, pixelX, pixelY, profile.id)
+      baseRow, pixelX, pixelY, profile.id, basePalette)
   elseif source.visualMode == "layout-fit" then
     paintLayoutFitBlock(atlas, assert(layoutCanvas, profile.id .. " layout-fit canvas is missing"),
       targetMap, targetX, targetY, pixelX, pixelY)
@@ -494,7 +525,7 @@ local function composeProfileBlock(atlas, layout, primary, secondary, profile, t
 end
 
 local function composeBorderBlock(atlas, layout, primary, secondary, profile, blockIndex,
-    oldBlock, base, baseAtlas, semanticState, semanticStart)
+    oldBlock, base, baseAtlas, basePalette, semanticState, semanticStart)
   local pixelX, pixelY, tileBaseX, tileBaseY = targetBlockPosition(blockIndex)
   local baseRow = base.blocks[(oldBlock or 0) + 1]
   if type(baseRow) ~= "table" or #baseRow ~= BLOCK_TILES then
@@ -502,7 +533,7 @@ local function composeBorderBlock(atlas, layout, primary, secondary, profile, bl
   end
   if profile.source.visualMode == "base-overrides" then
     copyBaseBlock(atlas, assert(baseAtlas, profile.id .. " border base atlas is missing"), base,
-      baseRow, pixelX, pixelY, profile.id .. " border")
+      baseRow, pixelX, pixelY, profile.id .. " border", basePalette)
   else
     -- A small Gen 1 interior draws its border repeatedly outside the 4×4 map.
     -- Sample FireRed's dedicated MapLayout border (not the room's top-left map
@@ -549,7 +580,7 @@ local function validateTarget(profile, map, base)
   end
 end
 
-function Converter.build(profile, rom, targetMap, targetTileset)
+function Converter.build(profile, rom, targetMap, targetTileset, options)
   local revision = revisionFromHeader(rom)
   if not (love and love.image and love.image.newImageData) then
     fail("the image runtime is unavailable; restart Gen1Recomp and retry the import")
@@ -600,13 +631,15 @@ function Converter.build(profile, rom, targetMap, targetTileset)
   local semanticState = newSemantics(targetTileset)
   local layoutCanvas = layoutFit and paintLayoutCanvas(layout, primary, secondary, profile) or nil
   local baseAtlas = (preserveBaseBlocks or baseOverrides) and loadBaseAtlas(profile, targetTileset) or nil
+  local basePalette = baseAtlas and basePaletteContext(profile, targetTileset,
+    options and options.gameData) or nil
   local blocks, remappedMapBlocks = {}, {}
   for by = 0, targetMap.height - 1 do
     for bx = 0, targetMap.width - 1 do
       local index = by * targetMap.width + bx
       local oldBlock = targetMap.blocks[index + 1]
       blocks[index + 1] = composeProfileBlock(atlas, layout, primary, secondary, profile,
-        targetMap, layoutCanvas, baseAtlas, bx, by, index, oldBlock, targetTileset, semanticState, semanticStart)
+        targetMap, layoutCanvas, baseAtlas, basePalette, bx, by, index, oldBlock, targetTileset, semanticState, semanticStart)
       remappedMapBlocks[index + 1] = index
     end
   end
@@ -615,7 +648,7 @@ function Converter.build(profile, rom, targetMap, targetTileset)
   -- profile's dedicated FireRed layout-border cells, while its collision
   -- semantics stay tied to the original target-map border block.
   blocks[totalBlocks] = composeBorderBlock(atlas, layout, primary, secondary, profile,
-    blockCount, targetMap.borderBlock or 0, targetTileset, baseAtlas, semanticState, semanticStart)
+    blockCount, targetMap.borderBlock or 0, targetTileset, baseAtlas, basePalette, semanticState, semanticStart)
 
   if not semanticState.grassTile and targetTileset.grassTile ~= nil then
     fail(profile.id .. " did not encounter the target map's grass collision tile")

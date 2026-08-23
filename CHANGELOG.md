@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0-rc.5 — Experimental battle-scale and palette-coherence correction
+
+> **Pre-release branch:** this isolated corrective build follows rc.4. Stable **v0.2.4** remains the rollback release and the personal index is not modified.
+
+The rc.4 gameplay recording confirmed that FireRed battle-art decoding works, but it also exposed a renderer-scale mismatch. FireRed Pokémon sheets are 64×64 pixels; Gen 1 normally draws 32×32 player back pictures at 2×, so using that default made imported player-side art 128×128 and allowed it to cover the classic HP and text areas. rc.5 leaves ROM decoding, LZ77 handling, palettes, trainer portraits, battle rules, and Pokémon data unchanged. It registers documented `battle_sprite_scales` records for every generated image path: 0.875× for a 64×64 enemy front image to fit Gen 1’s 56px front slot, and 1.0× for a player back image to retain Gen 1’s 64px on-screen footprint instead of applying its 2× default.
+
+The recording also clarified why the constrained Pallet overlay looked like three unrelated visual languages. Generated profile maps require a true-colour atlas for FireRed pixels; copied raw Gen 1 grayscale base pixels inside that atlas bypass the renderer’s usual advanced-colour bake, while maps not using the profile continue through the ordinary base tileset. rc.5 optionally pre-bakes copied base tiles using the same base tileset palette-group resolver used by the renderer, but only when the player’s advanced-colour pack is active. Normal monochrome mode is left monochrome by design. This changes pixels only; it does not alter blocks, map coordinates, collisions, doors, warps, events, scripts, saves, or the four-cell semantic lock.
+
+The visual-sprite test root was also corrected from an outdated main-branch clone to this active experimental checkout. The complete regression suite now executes against the code being packaged. New tests cover front/back scale-record registration, active game palette-data forwarding, and palette-aware copied-base-pixel output. No source ROM, extracted art, generated source atlas, user media, or external code is committed or packaged.
+
 ## 0.3.0-rc.4 — Experimental Pallet target-footprint correction
 
 > **Pre-release branch:** this map-only corrective build follows rc.3. Stable **v0.2.4** remains the rollback release and the personal index is not modified.
