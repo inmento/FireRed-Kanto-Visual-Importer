@@ -22,30 +22,61 @@ Profiles.PALLET_TOWN = {
     borderHeight = 2,
     primaryTileset = 0x082D4A94, -- gTileset_General
     secondaryTileset = 0x082D4AAC, -- gTileset_PalletTown
-    -- Reconstruct the complete verified 24×20 FireRed town layout into the
-    -- fixed 10×9 Gen 1 town footprint. The fixed target map remains Gen 1-owned
-    -- for all collision, warps, grass, and coordinates.
-    originX = 1,
-    originY = 2,
-    visualMode = "layout-fit",
-    -- Preserve only the original Gen 1 tree envelope and small-rock block. The
-    -- remaining town ground, grass, paths, water, and building pixels use the
-    -- bounded FireRed layout reconstruction.
-    visualPolicy = "preserve-base-blocks",
-    preserveBaseBlocks = {
-      [77] = true, [78] = true, [79] = true, [80] = true, [82] = true,
-      [116] = true,
+    -- A narrow Gen 1 facelift: begin every target block as its original Gen 1
+    -- visual, then overlay only declared FireRed samples. This deliberately
+    -- avoids compressing the 24×20 FireRed town through the 10×9 Gen 1 layout.
+    -- Trees, stones, water, ledges, fences, paths, and every undeclared target
+    -- block remain Gen 1 visuals; collision, warps, grass, and coordinates are
+    -- always Gen 1-owned.
+    originX = 0,
+    originY = 0,
+    visualMode = "base-overrides",
+    -- Gen 1 block 1 is Pallet's ordinary grass/ground field. This is a compact
+    -- unscaled FireRed ground sample, not a town-layout transform.
+    blockOverrides = {
+      [1] = { x = 2, y = 2 },
     },
-    -- A whole-layout fit cannot guarantee the three Gen 1 door/warp locations
-    -- sample their FireRed doorway cells. Repaint only those 32px visual blocks
-    -- after the fit, without moving the existing Gen 1 warp semantics.
-    layoutFitOverrides = {
-      ["2,2"] = { x = 5, y = 6 }, -- Red's House: FireRed warp at (6,7)
-      ["6,2"] = { x = 14, y = 6 }, -- Blue's House: FireRed warp at (15,7)
-      ["6,5"] = { x = 15, y = 12 }, -- Oak's Lab: FireRed warp at (16,13)
+    -- Each exterior is a coherent 3×2 target-block rectangle sampled from its
+    -- matching 6×4 FireRed building rectangle. The bottom-middle target blocks
+    -- remain the exact original Gen 1 entrance/warp blocks.
+    overrides = {
+      -- Red's House (Gen 1 door block 2,2; FireRed source door at 6,7).
+      ["1,1"] = { x = 4, y = 4 }, ["2,1"] = { x = 6, y = 4 }, ["3,1"] = { x = 8, y = 4 },
+      ["1,2"] = { x = 4, y = 6 }, ["2,2"] = { x = 6, y = 6 }, ["3,2"] = { x = 8, y = 6 },
+      -- Blue's House (Gen 1 door block 6,2; FireRed source door at 15,7).
+      ["5,1"] = { x = 13, y = 4 }, ["6,1"] = { x = 15, y = 4 }, ["7,1"] = { x = 17, y = 4 },
+      ["5,2"] = { x = 13, y = 6 }, ["6,2"] = { x = 15, y = 6 }, ["7,2"] = { x = 17, y = 6 },
+      -- Oak's Lab (Gen 1 door block 6,5; FireRed source door at 16,13).
+      ["6,4"] = { x = 14, y = 10 }, ["7,4"] = { x = 16, y = 10 }, ["8,4"] = { x = 18, y = 10 },
+      ["6,5"] = { x = 14, y = 12 }, ["7,5"] = { x = 16, y = 12 }, ["8,5"] = { x = 18, y = 12 },
     },
   },
   outdoor = true,
+}
+
+Profiles.REDS_HOUSE_2F = {
+  id = "FIRERED_REDS_HOUSE_2F",
+  map = "REDS_HOUSE_2F",
+  expectedTarget = { width = 4, height = 4, tileset = "REDS_HOUSE_2" },
+  source = {
+    layout = 0x082D52FC,
+    header = 0x08350D6C,
+    width = 12,
+    height = 9,
+    borderWidth = 2,
+    borderHeight = 2,
+    primaryTileset = 0x082D4BB4, -- gTileset_Building
+    secondaryTileset = 0x082D4C74, -- gTileset_GenericBuilding1
+    -- The compact source crop covers the bedroom. Gen 1's stair warp is at
+    -- target block (3,0), while FireRed's visual stair begins one source cell
+    -- farther east; retain the real Gen 1 stair semantic and repaint only it.
+    originX = 2,
+    originY = 1,
+    overrides = {
+      ["3,0"] = { x = 9, y = 2 },
+    },
+  },
+  outdoor = false,
 }
 
 Profiles.REDS_HOUSE_1F = {
@@ -77,7 +108,7 @@ Profiles.REDS_HOUSE_1F = {
 }
 
 function Profiles.each()
-  return ipairs({ Profiles.PALLET_TOWN, Profiles.REDS_HOUSE_1F })
+  return ipairs({ Profiles.PALLET_TOWN, Profiles.REDS_HOUSE_1F, Profiles.REDS_HOUSE_2F })
 end
 
 return Profiles

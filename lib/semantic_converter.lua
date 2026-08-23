@@ -442,25 +442,39 @@ local function composeProfileBlock(atlas, layout, primary, secondary, profile, t
   if type(baseRow) ~= "table" or #baseRow ~= BLOCK_TILES then
     fail(profile.id .. " target map references an unavailable Gen 1 block")
   end
-  local preserved = profile.source.visualPolicy == "preserve-base-blocks"
-    and profile.source.preserveBaseBlocks[oldBlock]
-  if preserved then
-    copyBaseBlock(atlas, assert(baseAtlas, profile.id .. " preserved base atlas is missing"), base,
+
+  local source = profile.source
+  local baseOverrides = source.visualMode == "base-overrides"
+  local preserved = source.visualPolicy == "preserve-base-blocks"
+    and source.preserveBaseBlocks[oldBlock]
+  if baseOverrides or preserved then
+    -- The constrained facelift starts with the original Gen 1 block pixels and
+    -- paints FireRed only where the profile names a compact source sample. This
+    -- deliberately prevents a whole foreign map layout from being compressed
+    -- through an unrelated fixed Gen 1 footprint.
+    copyBaseBlock(atlas, assert(baseAtlas, profile.id .. " base atlas is missing"), base,
       baseRow, pixelX, pixelY, profile.id)
-  elseif profile.source.visualMode == "layout-fit" then
+  elseif source.visualMode == "layout-fit" then
     paintLayoutFitBlock(atlas, assert(layoutCanvas, profile.id .. " layout-fit canvas is missing"),
       targetMap, targetX, targetY, pixelX, pixelY)
-    local override = (profile.source.layoutFitOverrides or {})[targetX .. "," .. targetY]
-    if override then
-      paintSourceBlock(atlas, layout, primary, secondary, profile, override.x, override.y,
-        pixelX, pixelY, profile.id .. " landmark override")
-    end
   else
-    local override = (profile.source.overrides or {})[targetX .. "," .. targetY]
-    local sourceBaseX = override and override.x or (profile.source.originX + targetX * 2)
-    local sourceBaseY = override and override.y or (profile.source.originY + targetY * 2)
+    local override = (source.overrides or {})[targetX .. "," .. targetY]
+    local sourceBaseX = override and override.x or (source.originX + targetX * 2)
+    local sourceBaseY = override and override.y or (source.originY + targetY * 2)
     paintSourceBlock(atlas, layout, primary, secondary, profile, sourceBaseX, sourceBaseY,
       pixelX, pixelY, profile.id)
+  end
+
+  local override
+  if baseOverrides then
+    override = (source.overrides or {})[targetX .. "," .. targetY]
+      or (source.blockOverrides or {})[oldBlock]
+  elseif source.visualMode == "layout-fit" then
+    override = (source.layoutFitOverrides or {})[targetX .. "," .. targetY]
+  end
+  if override then
+    paintSourceBlock(atlas, layout, primary, secondary, profile, override.x, override.y,
+      pixelX, pixelY, profile.id .. " explicit visual override")
   end
 
   local block = {}
@@ -480,23 +494,27 @@ local function composeProfileBlock(atlas, layout, primary, secondary, profile, t
 end
 
 local function composeBorderBlock(atlas, layout, primary, secondary, profile, blockIndex,
-    oldBlock, base, semanticState, semanticStart)
+    oldBlock, base, baseAtlas, semanticState, semanticStart)
   local pixelX, pixelY, tileBaseX, tileBaseY = targetBlockPosition(blockIndex)
-  -- A small Gen 1 interior draws its border repeatedly outside the 4×4 map.
-  -- Sample FireRed's dedicated MapLayout border (not the room's top-left map
-  -- cells) so the repeated edge remains a background frame instead of a wall
-  -- texture copied across the whole camera.
-  for sourceY = 0, 1 do
-    for sourceX = 0, 1 do
-      local mapEntry = layout.borderEntries[sourceY * layout.borderWidth + sourceX + 1] % 0x400
-      paintSourceMetatile(atlas, primary, secondary, mapEntry,
-        pixelX + sourceX * 16, pixelY + sourceY * 16, profile.id .. " border")
-    end
-  end
-
   local baseRow = base.blocks[(oldBlock or 0) + 1]
   if type(baseRow) ~= "table" or #baseRow ~= BLOCK_TILES then
     fail(profile.id .. " target map references an unavailable Gen 1 border block")
+  end
+  if profile.source.visualMode == "base-overrides" then
+    copyBaseBlock(atlas, assert(baseAtlas, profile.id .. " border base atlas is missing"), base,
+      baseRow, pixelX, pixelY, profile.id .. " border")
+  else
+    -- A small Gen 1 interior draws its border repeatedly outside the 4×4 map.
+    -- Sample FireRed's dedicated MapLayout border (not the room's top-left map
+    -- cells) so the repeated edge remains a background frame instead of a wall
+    -- texture copied across the whole camera.
+    for sourceY = 0, 1 do
+      for sourceX = 0, 1 do
+        local mapEntry = layout.borderEntries[sourceY * layout.borderWidth + sourceX + 1] % 0x400
+        paintSourceMetatile(atlas, primary, secondary, mapEntry,
+          pixelX + sourceX * 16, pixelY + sourceY * 16, profile.id .. " border")
+      end
+    end
   end
   local block = {}
   for tileY = 0, 3 do
@@ -545,7 +563,8 @@ function Converter.build(profile, rom, targetMap, targetTileset)
     profile.id .. " secondary tileset")
 
   local layoutFit = profile.source.visualMode == "layout-fit"
-  if profile.source.visualMode and not layoutFit then
+  local baseOverrides = profile.source.visualMode == "base-overrides"
+  if profile.source.visualMode and not layoutFit and not baseOverrides then
     fail(profile.id .. " has an unknown visual mode")
   end
   local preserveBaseBlocks = profile.source.visualPolicy == "preserve-base-blocks"
@@ -555,7 +574,7 @@ function Converter.build(profile, rom, targetMap, targetTileset)
   if preserveBaseBlocks and type(profile.source.preserveBaseBlocks) ~= "table" then
     fail(profile.id .. " preserve-base-blocks policy requires a block-id set")
   end
-  if not layoutFit then
+  if not layoutFit and not baseOverrides then
     local sourceCellsWide = profile.source.originX + targetMap.width * 2
     local sourceCellsHigh = profile.source.originY + targetMap.height * 2
     if sourceCellsWide > layout.width or sourceCellsHigh > layout.height then
@@ -580,7 +599,7 @@ function Converter.build(profile, rom, targetMap, targetTileset)
 
   local semanticState = newSemantics(targetTileset)
   local layoutCanvas = layoutFit and paintLayoutCanvas(layout, primary, secondary, profile) or nil
-  local baseAtlas = preserveBaseBlocks and loadBaseAtlas(profile, targetTileset) or nil
+  local baseAtlas = (preserveBaseBlocks or baseOverrides) and loadBaseAtlas(profile, targetTileset) or nil
   local blocks, remappedMapBlocks = {}, {}
   for by = 0, targetMap.height - 1 do
     for bx = 0, targetMap.width - 1 do
@@ -596,7 +615,7 @@ function Converter.build(profile, rom, targetMap, targetTileset)
   -- profile's dedicated FireRed layout-border cells, while its collision
   -- semantics stay tied to the original target-map border block.
   blocks[totalBlocks] = composeBorderBlock(atlas, layout, primary, secondary, profile,
-    blockCount, targetMap.borderBlock or 0, targetTileset, semanticState, semanticStart)
+    blockCount, targetMap.borderBlock or 0, targetTileset, baseAtlas, semanticState, semanticStart)
 
   if not semanticState.grassTile and targetTileset.grassTile ~= nil then
     fail(profile.id .. " did not encounter the target map's grass collision tile")

@@ -222,6 +222,29 @@ check(selectiveConverted.blocks[1][5] == selectiveConverted.walkable[1]
     and selectiveConverted.blocks[1][15] == selectiveConverted.warpTiles[1],
   "base-pixel preservation must not weaken the four-cell semantic lock")
 
+-- The constrained facelift defaults every target block to its Gen 1 pixels and
+-- overlays FireRed only for declared target coordinates or selected base block
+-- ids. It must never reintroduce whole-layout scaling or alter movement roles.
+local baseOverrideProfile = {}
+for key, value in pairs(profile) do baseOverrideProfile[key] = value end
+baseOverrideProfile.source = {}
+for key, value in pairs(profile.source) do baseOverrideProfile.source[key] = value end
+baseOverrideProfile.source.visualMode = "base-overrides"
+baseOverrideProfile.source.overrides = { ["1,0"] = { x = 0, y = 0 } }
+baseOverrideProfile.source.blockOverrides = {}
+local baseOverrideConverted = Converter.build(baseOverrideProfile, rom, selectiveTargetMap, targetTileset)
+local nativeRed = select(1, baseOverrideConverted.imageData:getPixel(0, 0))
+local overrideRed = select(1, baseOverrideConverted.imageData:getPixel(32, 0))
+check(nativeRed == 1 / 16,
+  "base-overrides must begin undeclared map blocks with original Gen 1 pixels")
+check(overrideRed == 1,
+  "base-overrides must paint only the declared FireRed source rectangle")
+check(baseOverrideConverted.blocks[1][5] == baseOverrideConverted.walkable[1]
+    and baseOverrideConverted.blocks[1][7] == baseOverrideConverted.doorTiles[1]
+    and baseOverrideConverted.blocks[1][13] == baseOverrideConverted.grassTile
+    and baseOverrideConverted.blocks[1][15] == baseOverrideConverted.warpTiles[1],
+  "base-overrides must retain every original movement-cell semantic role")
+
 local unknownMode = {}
 for key, value in pairs(layoutFitProfile) do unknownMode[key] = value end
 unknownMode.source = {}

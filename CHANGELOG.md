@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0-rc.3 — Experimental constrained Gen 1 facelift
+
+> **Pre-release branch:** this corrective build supersedes the rc.2 whole-layout experiment. Stable **v0.2.4** remains the rollback release and the personal index is not modified.
+
+The rc.2 recording exposed a structural failure: fitting FireRed’s 24×20 Pallet layout into Gen 1’s fixed 10×9 town footprint compressed unrelated source regions into the same visual blocks. That produced doubled/composited building textures and made the visible laboratory doorway untrustworthy. rc.3 removes that whole-layout fit from the live Pallet profile. It starts every block with its already-installed Gen 1 pixel data, then overlays only one declared FireRed grass/ground source sample and three explicit, unscaled six-by-four-source-cell exterior rectangles for Red’s House, Blue’s House, and Oak’s Lab. Trees, stones, water, ledges, fences, paths, and every undeclared region remain Gen 1 visuals.
+
+The three building rectangles include the FireRed visual door samples at the corresponding fixed Gen 1 door blocks, but the original Gen 1 four-cell movement, door, warp, grass, water, counter, object, script, save, and connection semantics remain locked. The pre-existing compact Red’s House 1F profile remains independent of Pallet. A new dedicated Red’s House 2F profile uses the verified FireRed Player’s House 2F layout and aligns its stair visual to Gen 1’s unchanged upstairs return warp. The revised Pallet and 2F profiles both passed private in-memory builds against the authorized local source, and the full Lua test suite verifies the new default-Gen-1 explicit-overlay mode, crop bounds, and semantic locks.
+
+The generated-atlas cache namespace is revised again so rc.3 cannot reuse rc.2’s invalid Pallet atlas. No ROM, extracted graphics, generated atlas, validation fixture, or user video frame is committed or packaged.
+
 ## 0.3.0-rc.2 — Experimental Pallet selective terrain overlay
 
 > **Pre-release branch:** this remains an opt-in overworld reconstruction build. Stable **v0.2.4** remains the rollback release and is not modified.

@@ -8,7 +8,7 @@ local Profile = {}
 -- may survive a mod update inside a running installation. Namespace map
 -- profiles by pipeline revision so a fresh build cannot resolve a stale
 -- prior-version atlas under the same path.
-local PIPELINE_CACHE_REVISION = "v030rc2"
+local PIPELINE_CACHE_REVISION = "v030rc3"
 
 local function fail(message)
   error("FireRed importer: " .. message, 2)
