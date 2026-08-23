@@ -91,6 +91,16 @@ do
     "cache bridge returned wrong generated ImageData")
   check(assets.image("external.png") == "base-image:external.png",
     "cache bridge intercepted non-owned image path")
+
+  -- A renderer module can outlive an in-process mod replacement. A fresh
+  -- cache module must update the installed bridge so new profile paths read
+  -- only the new generated atlas cache, not prior-version content.
+  local FreshCache = load("lib/cache.lua")
+  local freshProbe = ImageData.new(1, 1)
+  FreshCache.putAtlas("firered/generated/v024/semantic/probe.png", { imageData = freshProbe })
+  FreshCache.installAssetBridge()
+  check(assets.imageData("firered/generated/v024/semantic/probe.png") == freshProbe,
+    "cache bridge did not refresh after importer reload")
 end
 
 print("FireRed Kanto Visual Importer foundation tests passed")

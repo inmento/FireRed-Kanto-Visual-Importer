@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.4 — Generated-atlas cache isolation
+
+The v0.2.3 recording confirmed that Red’s House 1F can now exit safely, but Pallet Town displayed FireRed **interior** visuals—yellow floor, dining table, and furniture—while retaining its outdoor NPC/script context. The FireRed Pallet source layout and tile declarations are distinct from the Player’s House profile, so this was treated as a generated-atlas cache-lifetime issue rather than as a coordinate or collision change.
+
+Map-profile atlas paths are now namespaced by the pipeline revision, ensuring that the renderer requests fresh Pallet and Red’s House images after an update. The private asset bridge also refreshes its backing atlas and image caches when the importer is reloaded while the renderer remains resident. A regression covers this in-process replacement path. This update does not alter map geometry, tile-lock semantics, exits, warps, grass, or any other gameplay behavior.
+
 ## 0.2.3 — Four-cell collision and warp tile lock
 
 The v0.2.2 recording exposed a gameplay-critical fault: after entering Red’s House 1F, attempting the downstairs exit could leave the player unable to move or return to Pallet Town. The semantic converter had copied the original collision role only from tile 13—the lower-left 8×8 tile of a 4×4 Gen 1 block. A Gen1Recomp map block contains **four** 16×16 movement cells, each checked from its own bottom-left tile: block tile indices 5, 7, 13, and 15. A door, stair, grass, warp, or passable cell at any of the other three positions could therefore inherit an unrelated role.

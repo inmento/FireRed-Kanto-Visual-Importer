@@ -1,12 +1,12 @@
 # FireRed Kanto Visual Importer
 
-**Test build: 0.2.3**
+**Test build: 0.2.4**
 
 FireRed Kanto Visual Importer reads visual data from a **player-provided**, launcher-verified English Pokémon FireRed v1.0 ROM. It keeps all source data local to the player and never includes a FireRed ROM, extracted FireRed graphics, map data, or generated FireRed-derived atlas in this public repository or its release ZIP.
 
-Version 0.2.3 retains the **map-aware semantic visual pipeline**, variable-size compressed-tileset repair, and dedicated layout-border handling. It also locks every Gen1Recomp movement cell in each generated 4×4 map block—not only the lower-left cell—so a door, stair, exit, grass, or passable cell cannot inherit another cell’s collision role. The existing Gen 1 map grid, collision, warps, ledges, grass, objects, scripts, encounters, progression, and saves remain authoritative.
+Version 0.2.4 retains the **map-aware semantic visual pipeline**, variable-size compressed-tileset repair, dedicated layout-border handling, and four-cell movement semantic lock. It also versions generated profile-atlas paths and refreshes the private asset bridge after an in-process mod update, preventing a previously cached house atlas from being reused when Pallet Town requests its distinct FireRed visual atlas. The existing Gen 1 map grid, collision, warps, ledges, grass, objects, scripts, encounters, progression, and saves remain authoritative.
 
-| Component | v0.2.3 behavior | Gameplay effect |
+| Component | v0.2.4 behavior | Gameplay effect |
 |---|---|---|
 | Pokémon battle art | Imported locally from the verified FireRed ROM. | Visual only. |
 | Trainer battle portraits | Imported locally from the verified FireRed ROM. | Visual only. |
@@ -20,7 +20,7 @@ FireRed has a 16×16 metatile system, while Gen1Recomp draws each Gen 1 map bloc
 
 That is why the prior Pallet Town screenshot could display a FireRed Pokémon Center over Red’s House: the numeric source block happened to be a Pokémon Center graphic, while the unchanged Gen 1 collision and warp were still those of Red’s House. The visual door was therefore not the real exit. Reducing the image scale could not correct that semantic mismatch.
 
-> **v0.2.3 rule:** the Gen 1 target map defines every coordinate and gameplay meaning. FireRed supplies only the visual cells, including bounded layout-border cells, while the original Gen 1 semantic tile is locked for each of the block’s four movement cells.
+> **v0.2.4 rule:** the Gen 1 target map defines every coordinate and gameplay meaning. FireRed supplies only the visual cells, including bounded layout-border cells, while the original Gen 1 semantic tile is locked for each of the block’s four movement cells and each profile resolves a fresh generated atlas.
 
 ## The map-aware pipeline
 
@@ -46,7 +46,7 @@ The launcher accepts only this exact source file through the standard **Imported
 
 Install or update **FireRed Kanto Visual Importer** through the personal index, enable it, and select the verified FireRed ROM when the launcher asks. The stable package ID is still `FIRERED_KANTO_VISUALS`, so users of older uppercase releases can update normally.
 
-**FR MAP VISUALS** is enabled by default. After installing v0.2.3, fully restart the game before testing. If map visuals are enabled but **no** requested profile can build, the importer now fails visibly in the Mod Manager with the first precise reader/converter diagnostic instead of silently showing all-native terrain. The first test route should be as follows:
+**FR MAP VISUALS** is enabled by default. After installing v0.2.4, fully restart the game before testing. If map visuals are enabled but **no** requested profile can build, the importer now fails visibly in the Mod Manager with the first precise reader/converter diagnostic instead of silently showing all-native terrain. The first test route should be as follows:
 
 1. Start in **Red’s House 1F** and walk through the visible downstairs door; the usual Gen 1 exit should work.
 2. Walk to the **Red’s House** entrance in **Pallet Town** and enter/leave it normally.

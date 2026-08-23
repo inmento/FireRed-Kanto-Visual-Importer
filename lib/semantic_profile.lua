@@ -4,12 +4,19 @@ local Cache = require("mods.FIRERED_KANTO_VISUALS.lib.cache")
 
 local Profile = {}
 
+-- Generated source-ROM atlases live only in memory, but renderer image caches
+-- may survive a mod update inside a running installation. Namespace map
+-- profiles by pipeline revision so a fresh build cannot resolve a stale
+-- prior-version atlas under the same path.
+local PIPELINE_CACHE_REVISION = "v024"
+
 local function fail(message)
   error("FireRed importer: " .. message, 2)
 end
 
 local function generatedPath(profile)
-  return "firered/generated/semantic/" .. profile.id:lower() .. ".png"
+  return "firered/generated/" .. PIPELINE_CACHE_REVISION .. "/semantic/"
+    .. profile.id:lower() .. ".png"
 end
 
 function Profile.apply(mod, profile, converted)

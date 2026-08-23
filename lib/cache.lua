@@ -27,8 +27,17 @@ end
 
 function Cache.installAssetBridge()
   local Assets = require("src.render.Assets")
-  if Assets._fireredKantoVisualsBridge then return end
-  Assets._fireredKantoVisualsBridge = true
+  local bridge = Assets._fireredKantoVisualsBridge
+  if bridge then
+    -- Mods can be replaced while the renderer module remains resident. Refresh
+    -- the bridge's backing tables so newly generated profile atlases cannot be
+    -- looked up in an earlier install's private cache.
+    bridge.imageDataCache = imageDataCache
+    bridge.imageCache = imageCache
+    return
+  end
+  bridge = { imageDataCache = imageDataCache, imageCache = imageCache }
+  Assets._fireredKantoVisualsBridge = bridge
 
   local oldImage = Assets.image
   local oldImageData = Assets.imageData
@@ -36,7 +45,7 @@ function Cache.installAssetBridge()
 
   Assets.imageData = function(path)
     if owns(path) then
-      local imageData = imageDataCache[path]
+      local imageData = bridge.imageDataCache[path]
       assert(imageData, "FireRed importer: missing generated image " .. path)
       return imageData
     end
@@ -45,13 +54,13 @@ function Cache.installAssetBridge()
 
   Assets.image = function(path)
     if owns(path) then
-      local image = imageCache[path]
+      local image = bridge.imageCache[path]
       if not image then
-        local imageData = imageDataCache[path]
+        local imageData = bridge.imageDataCache[path]
         assert(imageData, "FireRed importer: missing generated image " .. path)
         image = love.graphics.newImage(imageData)
         image:setFilter("nearest", "nearest")
-        imageCache[path] = image
+        bridge.imageCache[path] = image
       end
       return image
     end
@@ -59,7 +68,7 @@ function Cache.installAssetBridge()
   end
 
   Assets.exists = function(path)
-    if owns(path) then return imageDataCache[path] ~= nil end
+    if owns(path) then return bridge.imageDataCache[path] ~= nil end
     return oldExists(path)
   end
 end
