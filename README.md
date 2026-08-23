@@ -1,48 +1,62 @@
 # FireRed Kanto Visual Importer
 
-**Test build: 0.1.5**
+**Test build: 0.2.0**
 
-FireRed Kanto Visual Importer reads **player-provided** visual data from a launcher-verified English Pokémon FireRed v1.0 ROM. It imports FireRed-style Pokémon front/back battle pictures and mapped trainer battle portraits for the existing Gen 1 Kanto games. It never distributes the FireRed ROM, extracted FireRed artwork, or generated FireRed-derived files.
+FireRed Kanto Visual Importer reads visual data from a **player-provided**, launcher-verified English Pokémon FireRed v1.0 ROM. It keeps all source data local to the player and never includes a FireRed ROM, extracted FireRed graphics, map data, or generated FireRed-derived atlas in this public repository or its release ZIP.
 
-> **Version 0.1.5 makes collision-aligned Gen 1 terrain the safe default.** The former numeric FireRed terrain substitution is retained only as an explicit diagnostic preview because it cannot make FireRed doors, paths, ledges, water, and buildings line up with Gen 1’s unchanged map block grid.
+Version 0.2.0 replaces the old unsafe numeric terrain experiment with a **map-aware semantic visual pipeline**. It keeps the existing Gen 1 map grid, collision, warps, ledges, grass, objects, scripts, encounters, progression, and saves authoritative, while rebuilding the visuals of explicitly supported maps from bounded FireRed layout and tileset data.
 
-| Component | Default behavior in v0.1.5 | Gameplay effect |
+| Component | v0.2.0 behavior | Gameplay effect |
 |---|---|---|
-| Pokémon battle art | Imported from the verified FireRed ROM. | Visual only. |
-| Trainer battle portraits | Imported from the verified FireRed ROM. | Visual only. |
-| Overworld terrain, houses, doors, paths, and map blocks | Uses normal Gen 1 terrain geometry. | Doors, collision, warps, ledges, grass, and map transitions stay aligned and usable. |
-| **FR TERRAIN PREVIEW** option | Off by default; restores the old numeric FireRed General-terrain prototype after restart. | Experimental only; its visible structures do not reliably identify Gen 1 collision or warp cells. |
+| Pokémon battle art | Imported locally from the verified FireRed ROM. | Visual only. |
+| Trainer battle portraits | Imported locally from the verified FireRed ROM. | Visual only. |
+| **Pallet Town** | Uses the FireRed Pallet Town layout and tileset as a visual reference, mapped onto the unchanged Gen 1 Pallet block grid. | Red’s House, Blue’s House, Oak’s Lab, paths, and entrances retain their original Gen 1 coordinates and behavior. |
+| **Red’s House 1F** | Uses the FireRed Player’s House 1F layout and tileset as a visual reference, mapped onto the unchanged Gen 1 interior grid. | The front exit and stairs retain their original Gen 1 warp coordinates and behavior. |
+| Other overworld and interior maps | Remain Gen 1 visuals until a dedicated profile is complete. | Safe native behavior. |
 
-## Why the old terrain looked too large and blocked the visible exit
+## Why the previous terrain preview failed
 
-FireRed uses **16×16 metatiles**, while Gen1Recomp renders every map block as a **32×32** region built from sixteen 8×8 tiles. The original prototype correctly converted each FireRed metatile into one 32×32 Gen1Recomp block. The apparent “too large” scale therefore was not a display zoom bug that can safely be halved.
+FireRed has a 16×16 metatile system, while Gen1Recomp draws each Gen 1 map block as a 4×4 grid of 8×8 tiles, or 32×32 pixels. The prior experiment substituted a FireRed metatile for a Gen 1 block with the same number. Those numbers do **not** describe the same thing in the two games.
 
-The actual defect was the prototype’s **numeric block substitution**: it replaced Gen 1 block `n` with unrelated FireRed metatile `n`, while intentionally retaining Gen 1 maps, collision, and warps. A FireRed-looking door could therefore appear somewhere different from the Gen 1 warp tile that actually changes maps. Walking to the visible front door could leave the player unable to exit even though the base-game warp still existed elsewhere in the preserved block geometry.
+That is why the prior Pallet Town screenshot could display a FireRed Pokémon Center over Red’s House: the numeric source block happened to be a Pokémon Center graphic, while the unchanged Gen 1 collision and warp were still those of Red’s House. The visual door was therefore not the real exit. Reducing the image scale could not correct that semantic mismatch.
 
-Version 0.1.5 removes that unsafe terrain swap from the default path. It also includes the v0.1.4 true-colour renderer correction for the earlier white/fragmented outdoor transition seen on leaving interiors. A real FireRed terrain layer requires deliberately authored **semantic compatibility profiles** for each relevant Gen 1 tileset/map category; it cannot be produced by a universal resize operation.
+> **v0.2.0 rule:** the Gen 1 target map defines every coordinate and gameplay meaning. FireRed supplies only the visual cells for that existing target footprint.
+
+## The map-aware pipeline
+
+The importer remains a single user-facing mod with three internal layers. Keeping these layers together avoids duplicate ROM imports, cross-mod cache sharing, and load-order conflicts while keeping player-provided source data private.
+
+| Internal layer | Responsibility | Safety boundary |
+|---|---|---|
+| **Verified ROM reader** | Opens only the launcher-verified FireRed v1.0 source and reads bounded profile-declared layout and tileset ranges. | No source content is bundled or uploaded. |
+| **Semantic converter and tile-lock validator** | Decodes FireRed tiles, palettes, metatiles, and source-map cells; then reassembles them into fixed 8×8 target tiles and 4×4 Gen 1 blocks. | Rejects non-integral tile grids, unavailable metatiles, unexpected layouts, invalid crop bounds, and unsupported ROM structure. |
+| **Map-profile applicator** | Registers a dedicated generated visual tileset and remaps only the selected Gen 1 map’s visual block rows. | The map’s dimensions, collision class, grass, water, doors, warps, objects, events, scripts, and saves remain Gen 1-owned. |
+
+The map converter gives every existing target map block its own visual row. It copies the original block’s collision-tile category—walkable, grass, water, shore, door, warp, counter, or blocked—onto the generated row. A visible FireRed door can therefore be sampled for the precise Gen 1 block that already owns the real Gen 1 exit warp; it cannot move that warp or create a new one.
 
 ## Supported source ROM
 
-The launcher accepts only the following exact source file through its standard **Imported Files** flow.
+The launcher accepts only this exact source file through the standard **Imported Files** flow.
 
 | Revision | MD5 |
 |---|---|
 | FireRed English v1.0 | `e26ee0d44e809351c8ce2d73c7400cdd` |
 
-## Installation and update
+## Installation and testing
 
-Install or update **FireRed Kanto Visual Importer** through the personal index, enable it, and select the verified FireRed ROM when the launcher requests it. The stable package identity remains `FIRERED_KANTO_VISUALS`, so installations from the original uppercase releases can update normally.
+Install or update **FireRed Kanto Visual Importer** through the personal index, enable it, and select the verified FireRed ROM when the launcher asks. The stable package ID is still `FIRERED_KANTO_VISUALS`, so users of older uppercase releases can update normally.
 
-For the safe v0.1.5 configuration, leave **FR TERRAIN PREVIEW** disabled. If it was enabled on an existing installation, turn it off and restart the game before testing the player’s house exit. You should be able to leave the house, enter buildings, use doors, walk on paths, trigger grass, use ledges, and change maps using their normal Gen 1 behavior.
+**FR MAP VISUALS** is enabled by default. After installing v0.2.0, fully restart the game before testing. The first test route should be as follows:
 
-The preview option is for diagnostic screenshots only. Do not rely on a previewed building entrance, path, or ledge to represent the real collision/warp location until a future map-semantic profile explicitly supports that location.
+1. Start in **Red’s House 1F** and walk through the visible downstairs door; the usual Gen 1 exit should work.
+2. Walk to the **Red’s House** entrance in **Pallet Town** and enter/leave it normally.
+3. Check **Blue’s House** and **Oak’s Lab** entrances from Pallet Town.
+4. Confirm that grass, paths, collision, and map transitions remain usable around those buildings.
 
-## Scope and limitations
+Please report a screenshot or short clip with the named map and the visible problem if a profile needs further coordinate tuning. Maps outside Pallet Town and Red’s House 1F intentionally remain Gen 1 art until their own semantic profile is validated.
 
-This mod does **not** import or replace FireRed maps, collision, warps, NPCs, scripts, encounters, items, story progression, saves, or gameplay mechanics. It preserves the current Red, Blue, or Yellow Kanto map layouts and gameplay.
+## Scope and source policy
 
-A pixel-perfect FireRed map port is not the purpose of this importer. Future visual work must map FireRed art to the **meaning** of specific Gen 1 terrain blocks—such as grass, road, water, tree, ledge, building exterior, door, and interior—rather than assuming that the two games use matching numeric metatile IDs.
+This importer does **not** port FireRed maps or alter Gen 1 collision, warps, NPCs, scripts, encounters, items, story progression, save data, or gameplay mechanics. It changes only a supported map’s generated visual tileset. Its source reader uses the player’s local verified ROM at runtime; no Nintendo asset or ROM-derived cache is included in public releases.
 
-## Credits and source policy
-
-The importer architecture follows Gen1Recomp’s supported required-import system and uses player-local verified-ROM data at runtime. FireRed source graphics are never included in this public project or its release ZIP.
+The architecture was informed by the public import and cache-boundary practices of [Crystal 251](https://github.com/Deftones565/gen1recomp-mod-crystal-251) and [Stadium Battle FX](https://github.com/anxiousintrovert/StadiumBattleFX), without using either project’s code or requiring either mod.

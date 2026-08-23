@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0 — Map-aware Pallet and Red’s House visual profiles
+
+This release replaces the unsafe numeric FireRed terrain-preview experiment with the importer’s first proper **map-aware semantic conversion pipeline**. The pipeline reads only bounded FireRed English v1.0 layout/tileset ranges from the player’s verified local ROM, decodes the source into native 8×8 tiles and 16×16 metatiles, then rebuilds those visuals into fixed 4×4 Gen 1 tile blocks for explicit target maps.
+
+The first profiles support **Pallet Town** and **Red’s House 1F**. They map FireRed visual cells onto each existing Gen 1 map block’s exact footprint; Pallet’s Red’s House, Blue’s House, Oak’s Lab, and Red’s House 1F door/stair blocks use profile coordinate overrides where the two games position equivalent visual landmarks differently. The Gen 1 target maps retain their original dimensions, collision classes, grass, water, doors, warps, counters, events, objects, scripts, encounters, saves, and progression. A visible FireRed doorway can no longer create, move, or hide the underlying Gen 1 exit warp.
+
+The old **FR TERRAIN PREVIEW** option and its number-for-number General-terrain substitution are removed. **FR MAP VISUALS** is now enabled by default and applies only profiles that pass the converter’s layout, tileset, crop-bound, block-size, and semantic tile-lock validation. An invalid profile fails closed to the native Gen 1 map instead of showing mismatched FireRed terrain. Maps outside the two validated profiles remain normal Gen 1 artwork until their own semantic profiles are authored and tested.
+
+The release also adds regression coverage for bounded profile reads, 8×8 tile locking, 4×4 target block construction, original collision-class remapping, map-position remapping, per-profile failure containment, and the preserved FireRed battle-art path.
+
 ## 0.1.5 — Collision-aligned terrain default
 
 This release fixes the unsafe default terrain presentation exposed by testing. The previous prototype correctly expanded FireRed 16×16 metatiles into Gen1Recomp's 32×32 map-block geometry, but then substituted FireRed and Gen 1 blocks by matching numeric ID alone. Their block IDs do not share the same meanings. As a result, the visible FireRed door, road, water, ledge, or building could disagree with the retained Gen 1 collision and warp cell; the player could become unable to leave a house by walking to the displayed doorway.
