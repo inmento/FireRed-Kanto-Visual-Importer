@@ -31,24 +31,34 @@ Profiles.PALLET_TOWN = {
     originX = 0,
     originY = 0,
     visualMode = "base-overrides",
-    -- Gen 1 block 1 is Pallet's ordinary grass/ground field. This is a compact
-    -- unscaled FireRed ground sample, not a town-layout transform.
-    blockOverrides = {
-      [1] = { x = 2, y = 2 },
-    },
-    -- Each exterior is a coherent 3×2 target-block rectangle sampled from its
-    -- matching 6×4 FireRed building rectangle. The bottom-middle target blocks
-    -- remain the exact original Gen 1 entrance/warp blocks.
+    -- A repeated Gen 1 block ID is not a reliable terrain category. Declare
+    -- only the actual Pallet target-ground coordinates that receive the compact
+    -- FireRed grass/ground sample; every other undeclared location stays Gen 1.
     overrides = {
-      -- Red's House (Gen 1 door block 2,2; FireRed source door at 6,7).
-      ["1,1"] = { x = 4, y = 4 }, ["2,1"] = { x = 6, y = 4 }, ["3,1"] = { x = 8, y = 4 },
-      ["1,2"] = { x = 4, y = 6 }, ["2,2"] = { x = 6, y = 6 }, ["3,2"] = { x = 8, y = 6 },
-      -- Blue's House (Gen 1 door block 6,2; FireRed source door at 15,7).
-      ["5,1"] = { x = 13, y = 4 }, ["6,1"] = { x = 15, y = 4 }, ["7,1"] = { x = 17, y = 4 },
-      ["5,2"] = { x = 13, y = 6 }, ["6,2"] = { x = 15, y = 6 }, ["7,2"] = { x = 17, y = 6 },
-      -- Oak's Lab (Gen 1 door block 6,5; FireRed source door at 16,13).
-      ["6,4"] = { x = 14, y = 10 }, ["7,4"] = { x = 16, y = 10 }, ["8,4"] = { x = 18, y = 10 },
-      ["6,5"] = { x = 14, y = 12 }, ["7,5"] = { x = 16, y = 12 }, ["8,5"] = { x = 18, y = 12 },
+      -- Explicit target-ground mask (FireRed compact grass/ground at 2,2).
+      ["1,1"] = { x = 2, y = 2 }, ["4,1"] = { x = 2, y = 2 },
+      ["5,1"] = { x = 2, y = 2 }, ["8,1"] = { x = 2, y = 2 },
+      ["4,2"] = { x = 2, y = 2 }, ["8,2"] = { x = 2, y = 2 },
+      ["1,3"] = { x = 2, y = 2 }, ["2,3"] = { x = 2, y = 2 },
+      ["3,3"] = { x = 2, y = 2 }, ["4,3"] = { x = 2, y = 2 },
+      ["5,3"] = { x = 2, y = 2 }, ["6,3"] = { x = 2, y = 2 },
+      ["7,3"] = { x = 2, y = 2 }, ["8,3"] = { x = 2, y = 2 },
+      ["1,4"] = { x = 2, y = 2 }, ["4,4"] = { x = 2, y = 2 }, ["8,4"] = { x = 2, y = 2 },
+      ["1,5"] = { x = 2, y = 2 }, ["4,5"] = { x = 2, y = 2 }, ["8,5"] = { x = 2, y = 2 },
+      ["1,6"] = { x = 2, y = 2 }, ["2,6"] = { x = 2, y = 2 },
+      ["3,6"] = { x = 2, y = 2 }, ["4,6"] = { x = 2, y = 2 },
+
+      -- Red's House uses its actual 2×2 Gen 1 footprint. The lower-left block
+      -- contains the fixed Gen 1 entry and samples FireRed's visual door cell.
+      ["2,1"] = { x = 5, y = 4 }, ["3,1"] = { x = 7, y = 4 },
+      ["2,2"] = { x = 5, y = 6 }, ["3,2"] = { x = 7, y = 6 },
+      -- Blue's House: same 2×2 target footprint, aligned to its own FireRed door.
+      ["6,1"] = { x = 14, y = 4 }, ["7,1"] = { x = 16, y = 4 },
+      ["6,2"] = { x = 14, y = 6 }, ["7,2"] = { x = 16, y = 6 },
+      -- Oak's Lab uses its actual 2×2 structural target footprint; x=8 remains
+      -- target ground rather than an invented third building column.
+      ["6,4"] = { x = 15, y = 10 }, ["7,4"] = { x = 17, y = 10 },
+      ["6,5"] = { x = 15, y = 12 }, ["7,5"] = { x = 17, y = 12 },
     },
   },
   outdoor = true,

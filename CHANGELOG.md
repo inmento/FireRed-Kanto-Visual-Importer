@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0-rc.4 — Experimental Pallet target-footprint correction
+
+> **Pre-release branch:** this map-only corrective build follows rc.3. Stable **v0.2.4** remains the rollback release and the personal index is not modified.
+
+The rc.3 recording confirmed that FireRed battle sprites and trainer art import correctly; rc.4 deliberately leaves that proven path untouched. It also exposed two Pallet-profile errors. First, Gen 1 base block ID 1 is reused across more than one visual context, so applying one FireRed ground sample through a global block-ID override spread it into unintended town space. Second, the declared Red’s House, Blue’s House, and Oak’s Lab rectangles were one target block too wide, producing clean but oversized FireRed exteriors over adjacent fixed Gen 1 terrain.
+
+rc.4 removes the global target-block override. FireRed grass/ground is now selected only by an explicit Pallet coordinate mask, while all other terrain defaults to the installed Gen 1 block pixels. Red’s House and Blue’s House each use their actual 2×2 Gen 1 block footprint, and Oak’s Lab uses its actual 2×2 structural footprint; the neighboring Gen 1 ground blocks are no longer treated as laboratory art. Each lower-left building block is sampled from the FireRed 2×2 source group containing its visual doorway, while the existing Gen 1 entrance warp and every original movement-cell semantic remains authoritative.
+
+The compact Red’s House 1F and 2F profiles are retained unchanged. The generated-atlas cache revision advances again so rc.4 cannot reuse rc.3 output. Profile/converter tests, full syntax checks, a private in-memory revised-Pallet build, and entrance-semantic checks pass. No battle-art module, ROM, extracted image, generated source atlas, temporary validation fixture, or user media is included in source control or the package.
+
 ## 0.3.0-rc.3 — Experimental constrained Gen 1 facelift
 
 > **Pre-release branch:** this corrective build supersedes the rc.2 whole-layout experiment. Stable **v0.2.4** remains the rollback release and the personal index is not modified.

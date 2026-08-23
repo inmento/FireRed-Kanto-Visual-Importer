@@ -19,11 +19,14 @@ local expected = {
     primary = 0x082D4A94, secondary = 0x082D4AAC,
     visualMode = "base-overrides",
     visualPolicy = nil,
-    blockOverrides = { [1] = { x = 2, y = 2 } },
     overrides = {
-      ["2,2"] = { x = 6, y = 6 },
-      ["6,2"] = { x = 15, y = 6 },
-      ["6,5"] = { x = 14, y = 12 },
+      ["1,1"] = { x = 2, y = 2 },
+      ["2,1"] = { x = 5, y = 4 }, ["3,1"] = { x = 7, y = 4 },
+      ["2,2"] = { x = 5, y = 6 }, ["3,2"] = { x = 7, y = 6 },
+      ["6,1"] = { x = 14, y = 4 }, ["7,1"] = { x = 16, y = 4 },
+      ["6,2"] = { x = 14, y = 6 }, ["7,2"] = { x = 16, y = 6 },
+      ["6,4"] = { x = 15, y = 10 }, ["7,4"] = { x = 17, y = 10 },
+      ["6,5"] = { x = 15, y = 12 }, ["7,5"] = { x = 17, y = 12 },
     },
   },
   FIRERED_REDS_HOUSE_2F = {
@@ -73,13 +76,8 @@ for _, profile in Profiles.each() do
     profile.id .. " visual preservation policy changed")
 
   local source = profile.source
-  if want.blockOverrides then
-    for block, expectedPoint in pairs(want.blockOverrides) do
-      local point = (source.blockOverrides or {})[block]
-      check(point and point.x == expectedPoint.x and point.y == expectedPoint.y,
-        profile.id .. " block visual override changed for " .. block)
-    end
-  end
+  check(source.blockOverrides == nil,
+    profile.id .. " must not use a global base-block visual override")
   if want.overrides then
     for key, expectedPoint in pairs(want.overrides) do
       local point = (source.overrides or {})[key]
