@@ -62,9 +62,10 @@ Profiles.REDS_HOUSE_1F = {
     originX = 2,
     originY = 2,
     overrides = {
-      -- Upper-left kitchen/window zone; source TV interaction is at (6,1).
-      ["0,0"] = { x = 2, y = 0 },
-      ["1,0"] = { x = 5, y = 0 },
+      -- Upper-left kitchen/window zone. FireRed's TV interaction is (6,1),
+      -- therefore target block (0,0) must sample source base (5,0).
+      ["0,0"] = { x = 5, y = 0 },
+      ["1,0"] = { x = 7, y = 0 },
       -- FireRed stair warp is (10,2); Gen 1's is in target block (3,0).
       ["3,0"] = { x = 9, y = 1 },
       -- FireRed Mom/table center (8,4) -> Gen 1 Mom/table block (2,2).

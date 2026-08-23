@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.5-rc.2 — Experimental TV and kitchen alignment
+
+The user supplied Red/Yellow and FireRed 1F/2F visual references and a v0.2.5-rc.1 gameplay recording. The first experiment improved the room but left the television, kitchen/window zone, and other upper-wall fixtures shifted. FireRed’s public 1F event metadata places the television interaction at source cell `(6,1)`. Because one generated target block samples a 2×2 source-cell square, that feature belongs in target block `(0,0)` only when the source base is `(5,0)`.
+
+This pre-release moves the upper-left target block to source `(5,0)` and its adjacent kitchen continuation to `(7,0)`. The stair, Mom/table, and front-exit mappings, plus the four-cell movement semantic lock, are unchanged. This remains an experimental visual-only revision; stable **v0.2.4** is still the rollback release.
+
 ## 0.2.5-rc.1 — Experimental landmark-mapping pre-release
 
 > **Pre-release branch:** this build is an opt-in visual-alignment experiment. Stable **v0.2.4** remains the rollback release and is not changed by this branch.

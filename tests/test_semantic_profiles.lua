@@ -30,8 +30,8 @@ local expected = {
     sourceWidth = 13, sourceHeight = 10, borderWidth = 2, borderHeight = 2,
     primary = 0x082D4BB4, secondary = 0x082D4C74,
     overrides = {
-      ["0,0"] = { x = 2, y = 0 },
-      ["1,0"] = { x = 5, y = 0 },
+      ["0,0"] = { x = 5, y = 0 },
+      ["1,0"] = { x = 7, y = 0 },
       ["3,0"] = { x = 9, y = 1 },
       ["2,2"] = { x = 7, y = 3 },
       ["1,3"] = { x = 4, y = 7 },

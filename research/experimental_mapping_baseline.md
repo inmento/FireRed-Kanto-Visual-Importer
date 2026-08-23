@@ -26,3 +26,13 @@ This branch may use public FireRed/Red gameplay, open-source decompilation layou
 Inspection of the supplied v0.2.4 recording at approximately 34 seconds shows FireRed-style outdoor visual content: saturated FireRed grass, flower clusters, large gray stone boundary pieces, and a FireRed building facade. The visual profile is therefore active on the outside path later in the clip. The user’s report that Pallet appeared unchanged remains important evidence for the house-exit/early-overworld transition and for landmark composition, but it should not be modeled as a total failure to construct the Pallet profile.
 
 Experimental research must compare named map positions and transition timing rather than treat any single early frame as proof that the outdoor profile did not apply.
+
+## v0.2.5-rc.1 review and next correction
+
+The user supplied side-by-side Red/Yellow and FireRed 1F/2F house references and asked that the still images not be reopened; this branch relies on their visible landmark arrangement plus the new gameplay video and existing public event metadata.
+
+The v0.2.5-rc.1 contact sheet shows the four-cell movement safety behavior remains intact: the player traverses 1F and exits to the FireRed-style outdoor Pallet scene. The house visual alignment improved but remains imperfect.
+
+A concrete coordinate error was identified in the experimental mapping: FireRed’s public 1F metadata places the TV interaction at source cell `(6,1)`. A 32px target block samples a 2×2 source-cell square. The target upper-left block `(0,0)` must therefore sample source base `(5,0)` to contain `(6,1)`. The prior experimental override incorrectly placed `(5,0)` at target block `(1,0)` and assigned `(0,0)` source base `(2,0)`, shifting the TV/kitchen zone one 32px target block. The next RC should set `(0,0) -> (5,0)` and move the adjacent top-row continuation to `(1,0) -> (7,0)`; keep the tested stair, Mom/table, and front-exit mappings unchanged.
+
+The user described Pallet as unaffected, but the latest experimental recording contains a later outdoor sequence with FireRed-style grass, flowers, large stone borders, and FireRed building facades. Treat Pallet as profile-active but still subject to future landmark tuning; do not make a blind Pallet cache or source-address change in the next focused RC.
