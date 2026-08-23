@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0-rc.2 — Experimental Pallet selective terrain overlay
+
+> **Pre-release branch:** this remains an opt-in overworld reconstruction build. Stable **v0.2.4** remains the rollback release and is not modified.
+
+The first full-layout Pallet test was much closer visually, but it over-converted the town: the user wanted FireRed-derived grass, ground, and paths while retaining the distinctive Gen 1 large trees and small stones. This refinement introduces an explicit, auditable Gen 1 target-block mask. During the in-memory generated-atlas build, only the declared tree-envelope blocks and the requested small-rock block copy their pixels from the player’s already-installed Gen 1 base tileset; all other Pallet blocks continue to use the bounded FireRed layout reconstruction. No Gen 1 or FireRed asset is added to the repository or package.
+
+The profile also repaints the FireRed 2×2 source samples for Red’s House, Blue’s House, and Oak’s Lab after the whole-layout fit. Their visible doorway cells now target the FireRed source locations that correspond to the fixed Gen 1 house/laboratory warp blocks. The Gen 1 warps themselves, as well as all four semantic movement cells per generated block, remain unchanged. A cache namespace revision prevents a v0.3.0-rc.1 full-layout atlas from being reused by this selective-overlay build. New regressions cover base-atlas copying, post-fit landmark override precedence, invalid visual-policy rejection, the exact retained block set, and all four movement-cell semantic locks.
+
 ## 0.3.0-rc.1 — Experimental Pallet full-layout reconstruction
 
 > **Pre-release branch:** this opt-in overworld reconstruction build is separate from the earlier house-composition experiments. Stable **v0.2.4** remains the rollback release and is not modified.

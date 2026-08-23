@@ -46,7 +46,24 @@ function ImageData:mapPixel(fn)
   end
 end
 
-love = { image = { newImageData = ImageData.new } }
+local baseAtlas = ImageData.new(128, 8)
+for tile = 0, 15 do
+  for y = 0, 7 do
+    for x = 0, 7 do
+      baseAtlas:setPixel(tile * 8 + x, y, (tile + 1) / 16, 0, 0, 1)
+    end
+  end
+end
+
+local function newImageData(width, height)
+  if type(width) == "string" then
+    check(width == "synthetic-base.png", "converter requested an unexpected base image")
+    return baseAtlas
+  end
+  return ImageData.new(width, height)
+end
+
+love = { image = { newImageData = newImageData } }
 
 local Addresses = require("mods.FIRERED_KANTO_VISUALS.lib.addresses")
 Addresses.ROM_SIZE = 0x40000 -- compact synthetic fixture, not a real ROM.
@@ -105,6 +122,13 @@ local function fixtureRom()
   -- primary graphics occupy 0..639 and secondary graphics begin at 640. Make
   -- primary metatile 0 reference secondary tile 0/global tile 640 at palette 7.
   putU16(primaryMetatiles + 0, 0x7000 + 640)
+  -- Give source cell (0,0) a visibly distinct primary metatile. A selective
+  -- layout-fit override later samples this cell to prove it repaints after the
+  -- proportional whole-layout fit.
+  putU16(mapData + 0, 1)
+  putU16(primaryMetatiles + 16, 1)
+  rom = put(rom, primaryTiles + 32, string.rep(string.char(0x11), 32))
+  putU16(primaryPalettes + 2, 0x001F)
   return rom, pointer(layout), pointer(mapHeader), pointer(primaryHeader), pointer(secondaryHeader),
     primaryTiles, secondaryTiles
 end
@@ -129,8 +153,10 @@ local targetMap = {
 }
 local baseRow = {}
 for index = 1, 16 do baseRow[index] = index - 1 end
+local secondBaseRow = {}
+for index = 1, 16 do secondBaseRow[index] = 15 end
 local targetTileset = {
-  id = "SYNTHETIC_TILESET", blocks = { baseRow },
+  id = "SYNTHETIC_TILESET", image = "synthetic-base.png", tilesPerRow = 16, blocks = { baseRow, secondBaseRow },
   walkable = { 4, 12 }, grassTile = 12, doorTiles = { 6 }, warpTiles = { 14 }, counterTiles = {},
 }
 
@@ -170,6 +196,32 @@ check(layoutFitConverted.blocks[1][5] == layoutFitConverted.walkable[1]
     and layoutFitConverted.blocks[1][15] == layoutFitConverted.warpTiles[1],
   "layout-fit visuals must keep all four original movement-cell roles")
 
+-- Explicitly preserved Gen 1 blocks must clone the base tileset pixels into the
+-- generated atlas, while unlisted blocks remain sourced from FireRed. The
+-- original four movement-cell semantic roles remain locked in either case.
+local selectiveProfile = {}
+for key, value in pairs(layoutFitProfile) do selectiveProfile[key] = value end
+selectiveProfile.source = {}
+for key, value in pairs(layoutFitProfile.source) do selectiveProfile.source[key] = value end
+selectiveProfile.source.visualPolicy = "preserve-base-blocks"
+selectiveProfile.source.preserveBaseBlocks = { [0] = true }
+selectiveProfile.source.layoutFitOverrides = { ["1,0"] = { x = 0, y = 0 } }
+local selectiveTargetMap = {}
+for key, value in pairs(targetMap) do selectiveTargetMap[key] = value end
+selectiveTargetMap.blocks = { 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+local selectiveConverted = Converter.build(selectiveProfile, rom, selectiveTargetMap, targetTileset)
+local preservedRed = select(1, selectiveConverted.imageData:getPixel(0, 0))
+local convertedRed = select(1, selectiveConverted.imageData:getPixel(32, 0))
+check(preservedRed == 1 / 16,
+  "preserved target blocks must copy their original Gen 1 base-atlas pixels")
+check(convertedRed == 1,
+  "a layout-fit landmark override must repaint its explicit FireRed source sample")
+check(selectiveConverted.blocks[1][5] == selectiveConverted.walkable[1]
+    and selectiveConverted.blocks[1][7] == selectiveConverted.doorTiles[1]
+    and selectiveConverted.blocks[1][13] == selectiveConverted.grassTile
+    and selectiveConverted.blocks[1][15] == selectiveConverted.warpTiles[1],
+  "base-pixel preservation must not weaken the four-cell semantic lock")
+
 local unknownMode = {}
 for key, value in pairs(layoutFitProfile) do unknownMode[key] = value end
 unknownMode.source = {}
@@ -178,6 +230,15 @@ unknownMode.source.visualMode = "unknown-mode"
 local modeOk, modeErr = pcall(Converter.build, unknownMode, rom, targetMap, targetTileset)
 check(not modeOk and tostring(modeErr):find("unknown visual mode"),
   "unrecognized profile visual modes must fail closed")
+
+local unknownPolicy = {}
+for key, value in pairs(selectiveProfile) do unknownPolicy[key] = value end
+unknownPolicy.source = {}
+for key, value in pairs(selectiveProfile.source) do unknownPolicy.source[key] = value end
+unknownPolicy.source.visualPolicy = "unknown-policy"
+local policyOk, policyErr = pcall(Converter.build, unknownPolicy, rom, targetMap, targetTileset)
+check(not policyOk and tostring(policyErr):find("unknown visual policy"),
+  "unrecognized visual policies must fail closed")
 
 -- FireRed secondary sheets are not universally 384 tiles. Exercise the
 -- compressed path with one 8x8 tile (32 decoded bytes) in both tilesets; this

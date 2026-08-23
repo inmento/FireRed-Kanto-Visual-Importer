@@ -18,6 +18,13 @@ local expected = {
     sourceWidth = 24, sourceHeight = 20, borderWidth = 2, borderHeight = 2,
     primary = 0x082D4A94, secondary = 0x082D4AAC,
     visualMode = "layout-fit",
+    visualPolicy = "preserve-base-blocks",
+    preservedBlocks = { 77, 78, 79, 80, 82, 116 },
+    layoutFitOverrides = {
+      ["2,2"] = { x = 5, y = 6 },
+      ["6,2"] = { x = 14, y = 6 },
+      ["6,5"] = { x = 15, y = 12 },
+    },
   },
   FIRERED_REDS_HOUSE_1F = {
     map = "REDS_HOUSE_1F",
@@ -26,6 +33,7 @@ local expected = {
     sourceWidth = 13, sourceHeight = 10, borderWidth = 2, borderHeight = 2,
     primary = 0x082D4BB4, secondary = 0x082D4C74,
     visualMode = nil,
+    visualPolicy = nil,
   },
 }
 
@@ -51,8 +59,25 @@ for _, profile in Profiles.each() do
     profile.id .. " FireRed tileset address changed")
   check(profile.source.visualMode == want.visualMode,
     profile.id .. " visual reconstruction mode changed")
+  check(profile.source.visualPolicy == want.visualPolicy,
+    profile.id .. " visual preservation policy changed")
 
   local source = profile.source
+  if want.preservedBlocks then
+    check(type(source.preserveBaseBlocks) == "table",
+      profile.id .. " must declare its preserved Gen 1 block set")
+    for _, block in ipairs(want.preservedBlocks) do
+      check(source.preserveBaseBlocks[block] == true,
+        profile.id .. " lost preserved target block " .. block)
+    end
+  end
+  if want.layoutFitOverrides then
+    for key, expectedPoint in pairs(want.layoutFitOverrides) do
+      local point = (source.layoutFitOverrides or {})[key]
+      check(point and point.x == expectedPoint.x and point.y == expectedPoint.y,
+        profile.id .. " landmark override changed at " .. key)
+    end
+  end
   local target = profile.expectedTarget
   check(source.originX >= 0 and source.originY >= 0,
     profile.id .. " source origin must be non-negative")
@@ -71,6 +96,16 @@ for _, profile in Profiles.each() do
       profile.id .. " override must have numeric source coordinates")
     check(point.x >= 0 and point.y >= 0 and point.x + 1 < source.width and point.y + 1 < source.height,
       profile.id .. " override samples outside the declared FireRed layout")
+  end
+  for key, point in pairs(source.layoutFitOverrides or {}) do
+    local x, y = key:match("^(%-?%d+),(%-?%d+)$")
+    x, y = tonumber(x), tonumber(y)
+    check(x and y and x >= 0 and y >= 0 and x < target.width and y < target.height,
+      profile.id .. " landmark override has an invalid target coordinate")
+    check(type(point) == "table" and type(point.x) == "number" and type(point.y) == "number",
+      profile.id .. " landmark override must have numeric source coordinates")
+    check(point.x >= 0 and point.y >= 0 and point.x + 1 < source.width and point.y + 1 < source.height,
+      profile.id .. " landmark override samples outside the declared FireRed layout")
   end
 end
 

@@ -384,38 +384,85 @@ local function paintLayoutFitBlock(atlas, canvas, targetMap, targetX, targetY, p
   end
 end
 
+local function loadBaseAtlas(profile, base)
+  if type(base.image) ~= "string" then
+    fail(profile.id .. " preserve-base-blocks policy requires the target tileset image")
+  end
+  local ok, image = pcall(love.image.newImageData, base.image)
+  if not ok or not image then
+    fail(profile.id .. " could not read the target tileset image for terrain preservation")
+  end
+  if image:getWidth() % TILE_SIZE ~= 0 or image:getHeight() % TILE_SIZE ~= 0 then
+    fail(profile.id .. " target tileset image is not aligned to 8px tiles")
+  end
+  return image
+end
+
+local function copyBaseBlock(atlas, baseAtlas, base, baseRow, left, top, label)
+  local tilesPerRow = base.tilesPerRow or math.floor(baseAtlas:getWidth() / TILE_SIZE)
+  if tilesPerRow < 1 then fail(label .. " target tileset image has no tile columns") end
+  for index = 1, BLOCK_TILES do
+    local tile = baseRow[index]
+    local sourceX = (tile % tilesPerRow) * TILE_SIZE
+    local sourceY = math.floor(tile / tilesPerRow) * TILE_SIZE
+    if sourceY + TILE_SIZE > baseAtlas:getHeight() then
+      fail(label .. " target block references a tile outside its base atlas")
+    end
+    local destinationX = left + ((index - 1) % 4) * TILE_SIZE
+    local destinationY = top + math.floor((index - 1) / 4) * TILE_SIZE
+    for y = 0, TILE_SIZE - 1 do
+      for x = 0, TILE_SIZE - 1 do
+        local r, g, b, a = baseAtlas:getPixel(sourceX + x, sourceY + y)
+        atlas:setPixel(destinationX + x, destinationY + y, r, g, b, a)
+      end
+    end
+  end
+end
+
+local function paintSourceBlock(atlas, layout, primary, secondary, profile, sourceBaseX, sourceBaseY, left, top, label)
+  for sourceY = 0, 1 do
+    for sourceX = 0, 1 do
+      local mapEntry = sourceCell(layout, sourceBaseX + sourceX, sourceBaseY + sourceY, profile.id)
+      paintSourceMetatile(atlas, primary, secondary, mapEntry,
+        left + sourceX * 16, top + sourceY * 16, label)
+    end
+  end
+end
+
 local function targetBlockPosition(index)
   local tileBaseX = (index % 16) * 4
   local tileBaseY = math.floor(index / 16) * 4
   return tileBaseX * TILE_SIZE, tileBaseY * TILE_SIZE, tileBaseX, tileBaseY
 end
 
-local function composeProfileBlock(atlas, layout, primary, secondary, profile, targetMap, layoutCanvas, targetX, targetY,
+local function composeProfileBlock(atlas, layout, primary, secondary, profile, targetMap, layoutCanvas, baseAtlas, targetX, targetY,
     blockIndex, oldBlock, base, semanticState, semanticStart)
   local pixelX, pixelY, tileBaseX, tileBaseY = targetBlockPosition(blockIndex)
-  if profile.source.visualMode == "layout-fit" then
-    paintLayoutFitBlock(atlas, assert(layoutCanvas, profile.id .. " layout-fit canvas is missing"),
-      targetMap, targetX, targetY, pixelX, pixelY)
-  else
-    local overrides = profile.source.overrides or {}
-    local override = overrides[targetX .. "," .. targetY]
-    local sourceBaseX = override and override.x or (profile.source.originX + targetX * 2)
-    local sourceBaseY = override and override.y or (profile.source.originY + targetY * 2)
-    for sourceY = 0, 1 do
-      for sourceX = 0, 1 do
-        local x = sourceBaseX + sourceX
-        local y = sourceBaseY + sourceY
-        local mapEntry = sourceCell(layout, x, y, profile.id)
-        paintSourceMetatile(atlas, primary, secondary, mapEntry,
-          pixelX + sourceX * 16, pixelY + sourceY * 16, profile.id)
-      end
-    end
-  end
-
   local baseRow = base.blocks[(oldBlock or 0) + 1]
   if type(baseRow) ~= "table" or #baseRow ~= BLOCK_TILES then
     fail(profile.id .. " target map references an unavailable Gen 1 block")
   end
+  local preserved = profile.source.visualPolicy == "preserve-base-blocks"
+    and profile.source.preserveBaseBlocks[oldBlock]
+  if preserved then
+    copyBaseBlock(atlas, assert(baseAtlas, profile.id .. " preserved base atlas is missing"), base,
+      baseRow, pixelX, pixelY, profile.id)
+  elseif profile.source.visualMode == "layout-fit" then
+    paintLayoutFitBlock(atlas, assert(layoutCanvas, profile.id .. " layout-fit canvas is missing"),
+      targetMap, targetX, targetY, pixelX, pixelY)
+    local override = (profile.source.layoutFitOverrides or {})[targetX .. "," .. targetY]
+    if override then
+      paintSourceBlock(atlas, layout, primary, secondary, profile, override.x, override.y,
+        pixelX, pixelY, profile.id .. " landmark override")
+    end
+  else
+    local override = (profile.source.overrides or {})[targetX .. "," .. targetY]
+    local sourceBaseX = override and override.x or (profile.source.originX + targetX * 2)
+    local sourceBaseY = override and override.y or (profile.source.originY + targetY * 2)
+    paintSourceBlock(atlas, layout, primary, secondary, profile, sourceBaseX, sourceBaseY,
+      pixelX, pixelY, profile.id)
+  end
+
   local block = {}
   for tileY = 0, 3 do
     for tileX = 0, 3 do
@@ -501,6 +548,13 @@ function Converter.build(profile, rom, targetMap, targetTileset)
   if profile.source.visualMode and not layoutFit then
     fail(profile.id .. " has an unknown visual mode")
   end
+  local preserveBaseBlocks = profile.source.visualPolicy == "preserve-base-blocks"
+  if profile.source.visualPolicy and not preserveBaseBlocks then
+    fail(profile.id .. " has an unknown visual policy")
+  end
+  if preserveBaseBlocks and type(profile.source.preserveBaseBlocks) ~= "table" then
+    fail(profile.id .. " preserve-base-blocks policy requires a block-id set")
+  end
   if not layoutFit then
     local sourceCellsWide = profile.source.originX + targetMap.width * 2
     local sourceCellsHigh = profile.source.originY + targetMap.height * 2
@@ -526,13 +580,14 @@ function Converter.build(profile, rom, targetMap, targetTileset)
 
   local semanticState = newSemantics(targetTileset)
   local layoutCanvas = layoutFit and paintLayoutCanvas(layout, primary, secondary, profile) or nil
+  local baseAtlas = preserveBaseBlocks and loadBaseAtlas(profile, targetTileset) or nil
   local blocks, remappedMapBlocks = {}, {}
   for by = 0, targetMap.height - 1 do
     for bx = 0, targetMap.width - 1 do
       local index = by * targetMap.width + bx
       local oldBlock = targetMap.blocks[index + 1]
       blocks[index + 1] = composeProfileBlock(atlas, layout, primary, secondary, profile,
-        targetMap, layoutCanvas, bx, by, index, oldBlock, targetTileset, semanticState, semanticStart)
+        targetMap, layoutCanvas, baseAtlas, bx, by, index, oldBlock, targetTileset, semanticState, semanticStart)
       remappedMapBlocks[index + 1] = index
     end
   end
