@@ -1,4 +1,4 @@
--- FireRed Kanto Visual Importer 0.3.0-rc.6
+-- FireRed Kanto Visual Importer 0.3.0-rc.7
 --
 -- One self-contained visual pipeline:
 --   1. verified local FireRed ROM reader;
@@ -17,6 +17,25 @@ local Converter = require("mods.FIRERED_KANTO_VISUALS.lib.semantic_converter")
 local SemanticProfile = require("mods.FIRERED_KANTO_VISUALS.lib.semantic_profile")
 local VisualSprites = require("mods.FIRERED_KANTO_VISUALS.lib.visual_sprites")
 local VisualSpriteProfile = require("mods.FIRERED_KANTO_VISUALS.lib.visual_sprite_profile")
+
+local function buildProfileVariants(profile, rom, baseMap, baseTileset, gameData)
+  local converted = Converter.build(profile, rom, baseMap, baseTileset, { gameData = gameData })
+  local variants = profile.source.paletteVariants or {}
+  for _, mode in ipairs(variants) do
+    local variant = Converter.build(profile, rom, baseMap, baseTileset, {
+      gameData = gameData,
+      basePaletteMode = mode,
+    })
+    if variant.imageWidth ~= converted.imageWidth or variant.imageHeight ~= converted.imageHeight
+       or variant.tilesPerRow ~= converted.tilesPerRow or #variant.blocks ~= #converted.blocks
+       or #variant.mapBlocks ~= #converted.mapBlocks then
+      error("FireRed importer: palette variant changed the semantic profile projection", 0)
+    end
+    converted.imageVariants = converted.imageVariants or {}
+    converted.imageVariants[mode] = variant.imageData
+  end
+  return converted
+end
 
 return function(mod)
   local playing = GameVersion.get()
@@ -51,8 +70,8 @@ return function(mod)
       -- available so the converter can pre-bake base tiles with the same GBC
       -- palette groups the renderer would normally apply to OVERWORLD.
       local game = mod.game
-      local ok, converted = pcall(Converter.build, profile, rom, baseMap, baseTileset,
-        { gameData = game and game.data })
+      local ok, converted = pcall(buildProfileVariants, profile, rom, baseMap, baseTileset,
+        game and game.data)
       if ok then
         SemanticProfile.apply(mod, profile, converted)
         appliedProfiles[#appliedProfiles + 1] = profile.id

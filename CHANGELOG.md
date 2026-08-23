@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0-rc.7 — Experimental Pallet advanced-colour lifecycle correction
+
+> **Pre-release branch:** this isolated corrective build follows rc.6. Stable **v0.2.4** remains the rollback release and the personal index is not modified.
+
+The newest recording and a private source-layout audit separated two concerns that had looked alike on screen. The active Pallet coordinate manifest is structurally correct: its explicit FireRed source groups reconstruct the native FireRed Pallet grass, Red’s House, Blue’s House, and Oak’s Lab art at the intended 2×2 Gen 1 target footprints. The visible black-and-white trees, rocks, fences, paths, signs, and other retained terrain did **not** show that the FireRed decoder or building samples had failed. They showed that copied Gen 1 pixels had entered the generated true-colour atlas before Gen1Recomp applied the player’s saved **ADVANCED** colour mode.
+
+rc.7 therefore preserves the existing Pallet source coordinates, target masks, 2×2 footprints, door alignment, and all four-cell semantic locks. It adds one private in-memory `redpp` atlas variant for **Pallet Town only**. That variant differs solely by pre-baking copied Gen 1 base pixels with the same `PaletteFX` OVERWORLD tile-group colours used by the engine’s normal advanced renderer. The normal generated image remains the default outside ADVANCED mode. When Gen1Recomp applies or changes COLORS and reloads the map, the importer-owned image bridge now selects the matching private variant and rebuilds only that generated image. FireRed source pixels are identical across variants; no external texture, sprite sheet, fallback image, file write, engine patch, map geometry, collision, warp, door, object, script, save, encounter, or battle/UI data changes.
+
+New regressions prove that an explicit `redpp` conversion recolours copied base pixels even when startup begins in the default display mode, that both variants retain the same semantic map projection, that only Pallet requests the variant, and that the asset bridge swaps it on a normal map reload while retaining resolver-based title/Oak behaviour and all non-importer paths. The private layout/contact-sheet and gameplay-frame audits were removed before source control or packaging. Stable **v0.2.4** and the personal index remain untouched.
+
 ## 0.3.0-rc.6 — Experimental intro-image resolver correction
 
 > **Pre-release branch:** this isolated corrective build follows rc.5. Stable **v0.2.4** remains the rollback release and the personal index is not modified.

@@ -30,10 +30,12 @@ local function run(playing, enabled, failingProfile)
     {
       id = "FIRERED_PALLET_TOWN", map = "PALLET_TOWN",
       expectedTarget = { tileset = "OVERWORLD" },
+      source = { paletteVariants = { "redpp" } },
     },
     {
       id = "FIRERED_REDS_HOUSE_1F", map = "REDS_HOUSE_1F",
       expectedTarget = { tileset = "REDS_HOUSE_1" },
+      source = {},
     },
   }
 
@@ -56,7 +58,11 @@ local function run(playing, enabled, failingProfile)
         local shouldFail = profile.id == failingProfile
           or (type(failingProfile) == "table" and failingProfile[profile.id])
         if shouldFail then error("profile checksum mismatch") end
-        return { imageData = {}, profile = profile }
+        return {
+          imageData = { profile = profile.id, mode = options and options.basePaletteMode },
+          imageWidth = 512, imageHeight = 64, tilesPerRow = 64,
+          blocks = { {} }, mapBlocks = { 0 }, profile = profile,
+        }
       end,
     }
   end
@@ -139,12 +145,15 @@ do
   check(defined[1].default == true, "map visuals must default on")
   check(calls.reads == 1 and calls.spriteDecode == 1 and calls.spriteApply == 1,
     "standard import must retain the FireRed battle-art path")
-  check(#calls.build == 2 and calls.build[1].id == "FIRERED_PALLET_TOWN"
-      and calls.build[2].id == "FIRERED_REDS_HOUSE_1F",
-    "standard import did not build both initial semantic profiles")
+  check(#calls.build == 3 and calls.build[1].id == "FIRERED_PALLET_TOWN"
+      and calls.build[2].id == "FIRERED_PALLET_TOWN"
+      and calls.build[3].id == "FIRERED_REDS_HOUSE_1F",
+    "standard import did not build the Pallet redpp variant and both semantic profiles")
   check(calls.build[1].options and calls.build[1].options.gameData == liveGameData
-      and calls.build[2].options and calls.build[2].options.gameData == liveGameData,
-    "map conversion did not receive live game palette data")
+      and calls.build[2].options and calls.build[2].options.gameData == liveGameData
+      and calls.build[2].options.basePaletteMode == "redpp"
+      and calls.build[3].options and calls.build[3].options.gameData == liveGameData,
+    "map conversion did not receive live palette data and the explicit Pallet redpp mode")
   check(#calls.apply == 2, "both completed semantic profiles must be applied")
   local game = {}
   ready({ game = game })
@@ -171,7 +180,7 @@ end
 -- validated profiles continue. It must never restore numeric block substitution.
 do
   local calls, _, ready = run("blue", true, "FIRERED_REDS_HOUSE_1F")
-  check(#calls.build == 2 and #calls.apply == 1 and calls.apply[1] == "FIRERED_PALLET_TOWN",
+  check(#calls.build == 3 and #calls.apply == 1 and calls.apply[1] == "FIRERED_PALLET_TOWN",
     "failed profile did not leave only the independent valid profile active")
   local game = {}
   ready({ game = game })

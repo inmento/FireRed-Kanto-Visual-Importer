@@ -31,6 +31,11 @@ Profiles.PALLET_TOWN = {
     originX = 0,
     originY = 0,
     visualMode = "base-overrides",
+    -- The player-selected ADVANCED palette is applied after mod content starts.
+    -- Keep one private redpp variant so copied Gen 1 terrain is pre-baked with
+    -- its normal per-tile colours when the engine reloads this true-colour map.
+    -- FireRed pixels and every semantic map role remain identical in both.
+    paletteVariants = { "redpp" },
     -- A repeated Gen 1 block ID is not a reliable terrain category. Declare
     -- only the actual Pallet target-ground coordinates that receive the compact
     -- FireRed grass/ground sample; every other undeclared location stays Gen 1.

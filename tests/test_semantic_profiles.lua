@@ -19,6 +19,7 @@ local expected = {
     primary = 0x082D4A94, secondary = 0x082D4AAC,
     visualMode = "base-overrides",
     visualPolicy = nil,
+    paletteVariants = { "redpp" },
     overrides = {
       ["1,1"] = { x = 2, y = 2 },
       ["2,1"] = { x = 5, y = 4 }, ["3,1"] = { x = 7, y = 4 },
@@ -74,6 +75,14 @@ for _, profile in Profiles.each() do
     profile.id .. " visual reconstruction mode changed")
   check(profile.source.visualPolicy == want.visualPolicy,
     profile.id .. " visual preservation policy changed")
+  local actualVariants = profile.source.paletteVariants or {}
+  local expectedVariants = want.paletteVariants or {}
+  check(#actualVariants == #expectedVariants,
+    profile.id .. " palette-variant count changed")
+  for index, mode in ipairs(expectedVariants) do
+    check(actualVariants[index] == mode,
+      profile.id .. " palette variant changed at " .. index)
+  end
 
   local source = profile.source
   check(source.blockOverrides == nil,

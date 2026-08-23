@@ -8,7 +8,7 @@ local Profile = {}
 -- may survive a mod update inside a running installation. Namespace map
 -- profiles by pipeline revision so a fresh build cannot resolve a stale
 -- prior-version atlas under the same path.
-local PIPELINE_CACHE_REVISION = "v030rc6"
+local PIPELINE_CACHE_REVISION = "v030rc7"
 
 local function fail(message)
   error("FireRed importer: " .. message, 2)
@@ -24,7 +24,10 @@ function Profile.apply(mod, profile, converted)
     fail("a complete semantic profile is required")
   end
   local path = generatedPath(profile)
-  Cache.putAtlas(path, { imageData = converted.imageData })
+  Cache.putAtlas(path, {
+    imageData = converted.imageData,
+    variants = converted.imageVariants,
+  })
 
   -- The registered tileset is a self-contained visual/collision projection of
   -- one unchanged Gen 1 target map. Its rows are exactly 4×4 tiles; its

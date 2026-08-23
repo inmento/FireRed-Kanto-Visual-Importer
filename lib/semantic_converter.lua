@@ -403,10 +403,15 @@ end
 -- bypass Gen1Recomp's normal per-tileset GBC bake and leave it monochrome next
 -- to FireRed. When the live palette pack is available, pre-bake the copied
 -- base tile with the same palette-group data the renderer uses for OVERWORLD.
-local function basePaletteContext(profile, base, gameData)
+local function basePaletteContext(profile, base, gameData, paletteMode)
   if not gameData or type(base.id) ~= "string" then return nil end
   local ok, palette = pcall(require, "src.render.PaletteFX")
-  if not ok or not palette or not palette.usesGbcPack or not palette.usesGbcPack()
+  -- A generated true-colour atlas cannot receive TileRenderer's later
+  -- per-tile ADVANCED bake. Profile generation normally uses the active mode,
+  -- but map profiles may also request an explicit `redpp` variant so a saved
+  -- ADVANCED selection that initializes after mod content still gets coherent
+  -- copied Gen 1 pixels on the engine's normal map reload path.
+  if not ok or not palette or not palette.usesGbcPack or not palette.usesGbcPack(paletteMode)
      or not palette.hasWorldTileset(base.id) then return nil end
   local groupColors = palette.worldGroupColors(gameData, base.id, profile.map, nil)
   if type(groupColors) ~= "table" then return nil end
@@ -632,7 +637,7 @@ function Converter.build(profile, rom, targetMap, targetTileset, options)
   local layoutCanvas = layoutFit and paintLayoutCanvas(layout, primary, secondary, profile) or nil
   local baseAtlas = (preserveBaseBlocks or baseOverrides) and loadBaseAtlas(profile, targetTileset) or nil
   local basePalette = baseAtlas and basePaletteContext(profile, targetTileset,
-    options and options.gameData) or nil
+    options and options.gameData, options and options.basePaletteMode) or nil
   local blocks, remappedMapBlocks = {}, {}
   for by = 0, targetMap.height - 1 do
     for bx = 0, targetMap.width - 1 do

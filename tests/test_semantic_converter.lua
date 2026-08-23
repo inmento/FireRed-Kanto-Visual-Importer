@@ -24,7 +24,7 @@ end
 package.loaded["src.render.PaletteFX"] = nil
 package.preload["src.render.PaletteFX"] = function()
   return {
-    usesGbcPack = function() return true end,
+    usesGbcPack = function(mode) return (mode or "gbc") == "redpp" end,
     hasWorldTileset = function(id) return id == "SYNTHETIC_TILESET" end,
     worldGroupColors = function()
       return { { { 255, 255, 255 }, { 160, 96, 48 }, { 80, 48, 24 }, { 16, 32, 48 } } }
@@ -260,11 +260,20 @@ check(baseOverrideConverted.blocks[1][5] == baseOverrideConverted.walkable[1]
 -- pixels. When an active GBC palette context is supplied, copied Gen 1 base
 -- pixels must be pre-baked with the same four-shade palette family instead of
 -- remaining monochrome inside that true-colour atlas.
-local paletteConverted = Converter.build(baseOverrideProfile, rom, selectiveTargetMap,
+local uncoloredConverted = Converter.build(baseOverrideProfile, rom, selectiveTargetMap,
   targetTileset, { gameData = { maps = {} } })
+local ur, ug, ub = uncoloredConverted.imageData:getPixel(0, 0)
+check(ur == 1 / 16 and ug == 0 and ub == 0,
+  "a non-ADVANCED build must retain the raw copied base pixel")
+
+local paletteConverted = Converter.build(baseOverrideProfile, rom, selectiveTargetMap,
+  targetTileset, { gameData = { maps = {} }, basePaletteMode = "redpp" })
 local pr, pg, pb = paletteConverted.imageData:getPixel(0, 0)
 check(pr == 16 / 255 and pg == 32 / 255 and pb == 48 / 255,
-  "palette-aware base copying must recolour preserved Gen 1 pixels in the generated atlas")
+  "an explicit redpp variant must recolour copied Gen 1 pixels independent of startup mode")
+check(#paletteConverted.blocks == #uncoloredConverted.blocks
+    and #paletteConverted.mapBlocks == #uncoloredConverted.mapBlocks,
+  "palette variants must retain the same semantic map projection")
 
 local unknownMode = {}
 for key, value in pairs(layoutFitProfile) do unknownMode[key] = value end

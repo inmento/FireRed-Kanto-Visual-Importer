@@ -61,6 +61,8 @@ local assets = {
   resolve = function(path) return "base-resolve:" .. path end,
 }
 package.preload["src.render.Assets"] = function() return assets end
+local PaletteFX = { mode = "gbc" }
+package.preload["src.render.PaletteFX"] = function() return PaletteFX end
 
 local Reader = require("mods.FIRERED_KANTO_VISUALS.lib.gba_reader")
 local Lz77 = require("mods.FIRERED_KANTO_VISUALS.lib.lz77")
@@ -98,6 +100,27 @@ do
     "cache bridge intercepted a non-owned resolver path")
   check(assets.image("external.png") == "base-image:external.png",
     "cache bridge intercepted non-owned image path")
+
+  -- PaletteFX applies a saved COLORS value after mod content has initialized.
+  -- A map reload must therefore select the private redpp atlas variant without
+  -- changing sprite/title/Oak paths or writing any file.
+  local advancedProbe = ImageData.new(1, 1)
+  Cache.putAtlas("firered/generated/semantic/mode-probe.png", {
+    imageData = probe,
+    variants = { redpp = advancedProbe },
+  })
+  check(assets.imageData("firered/generated/semantic/mode-probe.png") == probe,
+    "default palette mode selected an unexpected generated atlas variant")
+  check(assets.image("firered/generated/semantic/mode-probe.png").source == probe,
+    "default palette mode built the wrong generated image")
+  PaletteFX.mode = "redpp"
+  check(assets.imageData("firered/generated/semantic/mode-probe.png") == advancedProbe,
+    "ADVANCED palette mode did not select the generated redpp atlas variant")
+  check(assets.resolve("firered/generated/semantic/mode-probe.png") == advancedProbe,
+    "resolver bridge did not select the generated redpp atlas variant")
+  check(assets.image("firered/generated/semantic/mode-probe.png").source == advancedProbe,
+    "ADVANCED palette mode did not rebuild the generated map image")
+  PaletteFX.mode = "gbc"
 
   -- A renderer module can outlive an in-process mod replacement. A fresh
   -- cache module must update the installed bridge so new profile paths read
