@@ -123,7 +123,7 @@ local baseRow = {}
 for index = 1, 16 do baseRow[index] = index - 1 end
 local targetTileset = {
   id = "SYNTHETIC_TILESET", blocks = { baseRow },
-  walkable = { 12 }, grassTile = 12, doorTiles = {}, warpTiles = {}, counterTiles = {},
+  walkable = { 4, 12 }, grassTile = 12, doorTiles = { 6 }, warpTiles = { 14 }, counterTiles = {},
 }
 
 local converted = Converter.build(profile, rom, targetMap, targetTileset)
@@ -135,12 +135,16 @@ check(converted.mapBlocks[1] == 0 and converted.mapBlocks[16] == 15 and converte
   "converter must remap map positions rather than numerically pairing source block IDs")
 check(#converted.blocks[1] == 16,
   "each generated map block must retain exactly sixteen target 8px cells")
+check(converted.blocks[1][5] == converted.walkable[1],
+  "top-left movement cell must retain its original walkable semantic tile")
+check(converted.blocks[1][7] == converted.doorTiles[1],
+  "top-right movement cell must retain its original door semantic tile")
 check(converted.blocks[1][13] == converted.grassTile,
-  "collision tile must be remapped to the semantic grass tile")
-check(converted.walkable[1] == converted.grassTile,
-  "walkability must follow the original collision tile class")
-check(converted.semanticTileCount == 1,
-  "identical original collision classes must share one semantic tile")
+  "bottom-left movement cell must retain the semantic grass tile")
+check(converted.blocks[1][15] == converted.warpTiles[1],
+  "bottom-right movement cell must retain its original warp semantic tile")
+check(converted.semanticTileCount > 1,
+  "distinct movement cells must receive independent visual-semantic tile locks")
 
 -- FireRed secondary sheets are not universally 384 tiles. Exercise the
 -- compressed path with one 8x8 tile (32 decoded bytes) in both tilesets; this

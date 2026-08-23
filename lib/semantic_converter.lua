@@ -22,7 +22,11 @@ local PRIMARY_PALETTES = 7
 local SECONDARY_PALETTES = 6
 local MAP_METATILE_MASK = 0x03FF
 local BLOCK_TILES = 16
-local COLLISION_TILE_INDEX = 13 -- 1-based bottom-left tile of a 4×4 Gen 1 block.
+-- A 4×4 Gen 1 block contains four 16×16 movement cells. Map:cellTile reads
+-- the bottom-left 8×8 tile of each cell: rows 2/4 and columns 1/3 (1-based).
+-- Lock all four, not just the lower-left block cell, or a door/stair/exit can
+-- retain another cell's collision role and trap the player.
+local COLLISION_TILE_INDICES = { 5, 7, 13, 15 }
 
 local function fail(message)
   error("FireRed importer: " .. message, 2)
@@ -278,7 +282,7 @@ local function newSemantics(base)
       water = setFromList(base.waterTiles or { 0x14 }),
       shore = setFromList(base.shoreTiles or { 0x32, 0x48 }),
     },
-    tileForOriginal = {},
+    grassTileForOriginal = {},
     roles = {},
     walkable = {}, walkableSet = {},
     doors = {}, doorSet = {},
@@ -291,10 +295,15 @@ local function newSemantics(base)
 end
 
 local function semanticTile(atlas, state, oldTile, captureX, captureY, semanticStart)
-  local existing = state.tileForOriginal[oldTile]
+  -- Gen1Recomp exposes a single grassTile field, so all original grass cells
+  -- must share one semantic tile. Other roles may be visually distinct at the
+  -- four movement-cell positions of a generated block and therefore receive
+  -- their own locked semantic tile.
+  local existing = oldTile == state.base.grassTile
+    and state.grassTileForOriginal[oldTile] or nil
   if existing then return existing end
   local id = semanticStart + #state.roles
-  state.tileForOriginal[oldTile] = id
+  if oldTile == state.base.grassTile then state.grassTileForOriginal[oldTile] = id end
   state.roles[#state.roles + 1] = oldTile
   local tileX = (id % TILES_PER_ROW) * TILE_SIZE
   local tileY = math.floor(id / TILES_PER_ROW) * TILE_SIZE
@@ -351,16 +360,19 @@ local function composeProfileBlock(atlas, layout, primary, secondary, profile, t
   if type(baseRow) ~= "table" or #baseRow ~= BLOCK_TILES then
     fail(profile.id .. " target map references an unavailable Gen 1 block")
   end
-  local oldCollisionTile = baseRow[COLLISION_TILE_INDEX]
-  local newCollisionTile = semanticTile(atlas, semanticState, oldCollisionTile,
-    pixelX, pixelY + 24, semanticStart)
   local block = {}
   for tileY = 0, 3 do
     for tileX = 0, 3 do
       block[tileY * 4 + tileX + 1] = (tileBaseY + tileY) * TILES_PER_ROW + tileBaseX + tileX
     end
   end
-  block[COLLISION_TILE_INDEX] = newCollisionTile
+  for _, index in ipairs(COLLISION_TILE_INDICES) do
+    local oldCollisionTile = baseRow[index]
+    local captureX = pixelX + ((index - 1) % 4) * TILE_SIZE
+    local captureY = pixelY + math.floor((index - 1) / 4) * TILE_SIZE
+    block[index] = semanticTile(atlas, semanticState, oldCollisionTile,
+      captureX, captureY, semanticStart)
+  end
   return block
 end
 
@@ -383,16 +395,19 @@ local function composeBorderBlock(atlas, layout, primary, secondary, profile, bl
   if type(baseRow) ~= "table" or #baseRow ~= BLOCK_TILES then
     fail(profile.id .. " target map references an unavailable Gen 1 border block")
   end
-  local oldCollisionTile = baseRow[COLLISION_TILE_INDEX]
-  local newCollisionTile = semanticTile(atlas, semanticState, oldCollisionTile,
-    pixelX, pixelY + 24, semanticStart)
   local block = {}
   for tileY = 0, 3 do
     for tileX = 0, 3 do
       block[tileY * 4 + tileX + 1] = (tileBaseY + tileY) * TILES_PER_ROW + tileBaseX + tileX
     end
   end
-  block[COLLISION_TILE_INDEX] = newCollisionTile
+  for _, index in ipairs(COLLISION_TILE_INDICES) do
+    local oldCollisionTile = baseRow[index]
+    local captureX = pixelX + ((index - 1) % 4) * TILE_SIZE
+    local captureY = pixelY + math.floor((index - 1) / 4) * TILE_SIZE
+    block[index] = semanticTile(atlas, semanticState, oldCollisionTile,
+      captureX, captureY, semanticStart)
+  end
   return block
 end
 
@@ -442,7 +457,7 @@ function Converter.build(profile, rom, targetMap, targetTileset)
   -- the seventeenth block begins a new four-tile-high row at tile ID 256.
   local visualTileRows = math.ceil(totalBlocks / 16) * 4
   local semanticStart = visualTileRows * TILES_PER_ROW
-  local maxTiles = semanticStart + totalBlocks
+  local maxTiles = semanticStart + totalBlocks * #COLLISION_TILE_INDICES
   local imageHeight = math.ceil(maxTiles / TILES_PER_ROW) * TILE_SIZE
   local atlas = love.image.newImageData(TILES_PER_ROW * TILE_SIZE, imageHeight)
   atlas:mapPixel(function() return 0, 0, 0, 1 end)
@@ -468,7 +483,7 @@ function Converter.build(profile, rom, targetMap, targetTileset)
   if not semanticState.grassTile and targetTileset.grassTile ~= nil then
     fail(profile.id .. " did not encounter the target map's grass collision tile")
   end
-  if #semanticState.roles > totalBlocks then
+  if #semanticState.roles > totalBlocks * #COLLISION_TILE_INDICES then
     fail(profile.id .. " semantic tile allocation exceeded tile-lock capacity")
   end
   for _, row in ipairs(blocks) do

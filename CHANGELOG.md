@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.3 — Four-cell collision and warp tile lock
+
+The v0.2.2 recording exposed a gameplay-critical fault: after entering Red’s House 1F, attempting the downstairs exit could leave the player unable to move or return to Pallet Town. The semantic converter had copied the original collision role only from tile 13—the lower-left 8×8 tile of a 4×4 Gen 1 block. A Gen1Recomp map block contains **four** 16×16 movement cells, each checked from its own bottom-left tile: block tile indices 5, 7, 13, and 15. A door, stair, grass, warp, or passable cell at any of the other three positions could therefore inherit an unrelated role.
+
+This release locks and remaps all four movement-cell tiles in every generated map and border block. It retains the exact original Gen 1 walkable, door, warp, counter, water, shore, and grass semantics for each cell while continuing to source only the visual pixels from FireRed. The targeted regression fixture now asserts distinct walkable, door, grass, and warp roles within one generated block.
+
 ## 0.2.2 — Dedicated FireRed layout-border rendering
 
 The first v0.2.1 gameplay evidence confirmed that the map profiles now build at the intended Gen 1 footprint. It also exposed a small-interior presentation error: Red’s House 1F reused the top-left **room** sample as its generated map border. Gen1Recomp repeats that border outside a compact 4×4 house map, so the room wall/floor texture filled most of the camera beyond the actual room.
