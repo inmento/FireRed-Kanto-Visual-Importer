@@ -28,10 +28,15 @@ Profiles.PALLET_TOWN = {
     -- matches unrelated Gen 1/FireRed block IDs.
     originX = 1,
     originY = 2,
-    -- The original games place Oak's Lab one source cell farther east than its
-    -- Gen 1 block footprint. Keep the real Gen 1 Oak-Lab warp block at (6,5)
-    -- while sampling the FireRed Lab doorway at source cells 15..16, 12..13.
+    -- Explicit landmark samples are intentionally sparse. They retain each
+    -- Gen 1 warp block while sampling the equivalent FireRed entrance cell.
+    -- The remainder uses the bounded outdoor crop above.
     overrides = {
+      -- Red's House: target doorway (x5,y5) -> FireRed doorway (x6,y7).
+      ["2,2"] = { x = 5, y = 6 },
+      -- Blue's House: target doorway (x13,y5) -> FireRed doorway (x15,y7).
+      ["6,2"] = { x = 14, y = 6 },
+      -- Oak's Lab: target doorway (x12,y11) -> FireRed doorway (x16,y13).
       ["6,5"] = { x = 15, y = 12 },
     },
   },
@@ -51,16 +56,21 @@ Profiles.REDS_HOUSE_1F = {
     borderHeight = 2,
     primaryTileset = 0x082D4BB4, -- gTileset_Building
     secondaryTileset = 0x082D4C74, -- gTileset_GenericBuilding1
-    -- This crop keeps the FireRed 1F room and front-door row locked to Red's
-    -- existing four-by-four house footprint. The native Gen 1 warp at the
-    -- lower doorway retains its exact map coordinate and gameplay behavior.
+    -- The room body uses the conservative source crop. Landmark blocks below
+    -- use public FireRed/Red warp, sign, and object coordinates so furniture
+    -- cannot drift a whole 32px target block while gameplay stays Gen 1-owned.
     originX = 2,
     originY = 2,
-    -- The Gen 1 upstairs trigger occupies target block (3,0); FireRed places
-    -- its stair tile one source cell farther east. This keeps the original
-    -- Gen 1 staircase/warp coordinate and collision class intact.
     overrides = {
-      ["3,0"] = { x = 9, y = 2 },
+      -- Upper-left kitchen/window zone; source TV interaction is at (6,1).
+      ["0,0"] = { x = 2, y = 0 },
+      ["1,0"] = { x = 5, y = 0 },
+      -- FireRed stair warp is (10,2); Gen 1's is in target block (3,0).
+      ["3,0"] = { x = 9, y = 1 },
+      -- FireRed Mom/table center (8,4) -> Gen 1 Mom/table block (2,2).
+      ["2,2"] = { x = 7, y = 3 },
+      -- FireRed front exits (4,8)/(5,8) -> Gen 1 front-exit block (1,3).
+      ["1,3"] = { x = 4, y = 7 },
     },
   },
   outdoor = false,

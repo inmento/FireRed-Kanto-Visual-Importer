@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.5-rc.1 — Experimental landmark-mapping pre-release
+
+> **Pre-release branch:** this build is an opt-in visual-alignment experiment. Stable **v0.2.4** remains the rollback release and is not changed by this branch.
+
+This experiment replaces several coarse source-crop samples with explicit target-block-to-FireRed-landmark mappings. The source/target relationships were derived from public FireRed and original Red gameplay references plus the public FireRed layout and event metadata: Player’s House TV, kitchen/window zone, stair, Mom/table, and front exits; Pallet Town Player’s House, Rival’s House, and Oak’s Lab entrances. The implementation uses only numeric profile coordinates and the player’s verified local FireRed import at runtime—no public video frames, ROM data, third-party code, or extracted graphics are included.
+
+The v0.2.3 four-cell movement semantic lock, bounded ROM reader, and profile failure rules are unchanged. This pre-release must be tested first on the route from Red’s House 1F to Pallet Town, with attention to landmark placement and all exits/paths. Do not promote its mappings to the stable line until gameplay recordings support them.
+
 ## 0.2.4 — Generated-atlas cache isolation
 
 The v0.2.3 recording confirmed that Red’s House 1F can now exit safely, but Pallet Town displayed FireRed **interior** visuals—yellow floor, dining table, and furniture—while retaining its outdoor NPC/script context. The FireRed Pallet source layout and tile declarations are distinct from the Player’s House profile, so this was treated as a generated-atlas cache-lifetime issue rather than as a coordinate or collision change.

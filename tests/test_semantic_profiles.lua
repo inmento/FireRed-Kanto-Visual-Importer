@@ -17,6 +17,11 @@ local expected = {
     layout = 0x082DD4C0, header = 0x08350618,
     sourceWidth = 24, sourceHeight = 20, borderWidth = 2, borderHeight = 2,
     primary = 0x082D4A94, secondary = 0x082D4AAC,
+    overrides = {
+      ["2,2"] = { x = 5, y = 6 },
+      ["6,2"] = { x = 14, y = 6 },
+      ["6,5"] = { x = 15, y = 12 },
+    },
   },
   FIRERED_REDS_HOUSE_1F = {
     map = "REDS_HOUSE_1F",
@@ -24,6 +29,13 @@ local expected = {
     layout = 0x082D5200, header = 0x08350D50,
     sourceWidth = 13, sourceHeight = 10, borderWidth = 2, borderHeight = 2,
     primary = 0x082D4BB4, secondary = 0x082D4C74,
+    overrides = {
+      ["0,0"] = { x = 2, y = 0 },
+      ["1,0"] = { x = 5, y = 0 },
+      ["3,0"] = { x = 9, y = 1 },
+      ["2,2"] = { x = 7, y = 3 },
+      ["1,3"] = { x = 4, y = 7 },
+    },
   },
 }
 
@@ -56,6 +68,11 @@ for _, profile in Profiles.each() do
       and source.originY + target.height * 2 <= source.height,
     profile.id .. " normal source crop exceeds the declared FireRed layout")
 
+  for key, wantPoint in pairs(want.overrides or {}) do
+    local actual = (source.overrides or {})[key]
+    check(actual and actual.x == wantPoint.x and actual.y == wantPoint.y,
+      profile.id .. " landmark override changed: " .. key)
+  end
   for key, point in pairs(source.overrides or {}) do
     local x, y = key:match("^(%-?%d+),(%-?%d+)$")
     x, y = tonumber(x), tonumber(y)

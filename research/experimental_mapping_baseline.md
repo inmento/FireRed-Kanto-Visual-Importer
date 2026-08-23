@@ -1,0 +1,28 @@
+# Experimental Landmark-Mapping Branch Baseline
+
+Branch: `experimental/landmark-mapping-v025`
+
+Stable rollback release: `v0.2.4` at `57561e5`.
+
+## Stable behavior retained before experimentation
+
+- The FireRed import is verified and the semantic profiles construct at the intended Gen 1 footprint.
+- Red’s House 1F is reachable from the native upstairs room.
+- The Red’s House 1F downstairs exit returns to the overworld; the v0.2.3 four-cell semantic lock fixed the reported movement soft lock.
+- The first-floor movement boundary is now safe to explore.
+
+## Remaining visual defects to research
+
+- In Red’s House 1F, the kitchen sink, window, television, and related wall furniture render too high for their intended Red footprint; the upstairs stair visual resembles a banner rather than a staircase.
+- The profile’s compact-map background/wall composition still needs landmark-level tuning, but must not change exits, collision, or warps.
+- Pallet Town’s intended FireRed outdoor visual conversion needs independent verification and landmark mapping. The user’s latest clip is the reference evidence for distinguishing its actual appearance from the first-floor profile.
+
+## Experimental policy
+
+This branch may use public FireRed/Red gameplay, open-source decompilation layout metadata, and public ROM-hack/source techniques only to understand map semantics and coordinate-mapping methods. It must not copy third-party code, package Nintendo assets, store ROM-derived atlases, or change Gen 1 gameplay coordinates. All experimental releases remain pre-releases until in-game evidence supports promotion.
+
+## Post-baseline runtime clarification
+
+Inspection of the supplied v0.2.4 recording at approximately 34 seconds shows FireRed-style outdoor visual content: saturated FireRed grass, flower clusters, large gray stone boundary pieces, and a FireRed building facade. The visual profile is therefore active on the outside path later in the clip. The user’s report that Pallet appeared unchanged remains important evidence for the house-exit/early-overworld transition and for landmark composition, but it should not be modeled as a total failure to construct the Pallet profile.
+
+Experimental research must compare named map positions and transition timing rather than treat any single early frame as proof that the outdoor profile did not apply.
