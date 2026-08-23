@@ -1,7 +1,7 @@
 {
   "id": "FIRERED_KANTO_VISUALS",
   "name": "FireRed Kanto Visual Importer",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "api": 2,
   "entry": "main.lua",
   "profile": "overhaul",
@@ -15,7 +15,8 @@
   "optional_dependencies": [],
   "conflicts": [],
   "author": "inmento",
-  "description": "Imports player-provided FireRed v1.0 terrain and visual sprites while preserving the base game's maps, collision, warps, events, scripts, and gameplay.",
+  "github": "inmento/FireRed-Kanto-Visual-Importer",
+  "description": "Imports player-provided FireRed v1.0 battle visuals while preserving base-game maps, terrain geometry, collision, warps, events, scripts, and gameplay; the legacy FireRed terrain preview is explicit opt-in.",
   "required_imports": [
     {
       "id": "firered_rom",

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.5 — Collision-aligned terrain default
+
+This release fixes the unsafe default terrain presentation exposed by testing. The previous prototype correctly expanded FireRed 16×16 metatiles into Gen1Recomp's 32×32 map-block geometry, but then substituted FireRed and Gen 1 blocks by matching numeric ID alone. Their block IDs do not share the same meanings. As a result, the visible FireRed door, road, water, ledge, or building could disagree with the retained Gen 1 collision and warp cell; the player could become unable to leave a house by walking to the displayed doorway.
+
+FireRed terrain substitution is now disabled by default. Pokémon battle art and trainer portraits still import from the verified player-local FireRed ROM, while base Gen 1 terrain remains collision-aligned so houses, doors, warps, ledges, grass, and map transitions work normally. The prior terrain prototype remains available only through the short **FR TERRAIN PREVIEW** toggle for diagnostic screenshots, with an explicit restart requirement and warning that it is not navigation-safe.
+
+This is not a simple image-scaling correction. A future FireRed-style terrain layer must use authored semantic profiles that map FireRed art to the meaning of each Gen 1 terrain block and map category; it cannot safely rely on universal metatile resizing or numeric block pairing.
+
 ## 0.1.4 — Outdoor transition rendering correction
 
 This release fixes the white, fragmented outdoor screen that could appear when leaving an interior such as the player’s house. The importer had replaced the `OVERWORLD` atlas with FireRed true-colour tiles while retaining the vanilla `OVERWORLD` renderer identity. Gen1Recomp therefore attempted to apply its vanilla per-tile GBC palette bake to FireRed tile IDs that have no vanilla palette assignment.

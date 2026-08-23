@@ -1,7 +1,9 @@
--- FireRed Kanto Visual Importer 0.1.3
+-- FireRed Kanto Visual Importer 0.1.5
 --
--- This is deliberately a visual-only layer. It does not patch maps, collision,
--- warp data, events, NPCs, scripts, encounters, saves, or base-game mechanics.
+-- This layer imports player-provided FireRed visual assets without changing
+-- maps, collision, warps, events, NPCs, scripts, encounters, saves, or game
+-- mechanics. FireRed terrain previews are opt-in until semantic Gen 1 block
+-- profiles can align visible doors, paths, ledges, and water with live maps.
 
 local GameVersion = require("src.core.GameVersion")
 local Cache = require("mods.FIRERED_KANTO_VISUALS.lib.cache")
@@ -18,29 +20,48 @@ return function(mod)
     return
   end
 
+  -- FireRed's 16×16 metatiles become 32×32 Gen1Recomp blocks. A simple numeric
+  -- block substitution cannot preserve the meaning of Gen 1's block grid, so
+  -- visible FireRed doors and paths can disagree with preserved Gen 1 warps and
+  -- collision. Keep that prototype available for diagnostics only; new and
+  -- updated installs default to collision-aligned base terrain.
+  mod.options:define({
+    {
+      key = "terrain_preview",
+      label = "FR TERRAIN PREVIEW",
+      type = "toggle",
+      default = false,
+    },
+  })
+
   local rom = assert(mod:read("baseroms/firered.gba"),
     "FireRed source ROM is unavailable. Import a supported ROM in Gen1Recomp's Imported Files panel.")
 
-  local imported = GeneralTileset.decode(rom)
+  local terrainPreview = mod.options:get("terrain_preview") == true
+  local imported
+  if terrainPreview then
+    imported = GeneralTileset.decode(rom)
+  end
   local visualSprites = VisualSprites.decode(rom)
 
   Cache.installAssetBridge()
-  Cache.putAtlas("firered/generated/tilesets/general.png", imported.atlas)
+  if imported then
+    Cache.putAtlas("firered/generated/tilesets/general.png", imported.atlas)
+    VisualProfile.applyGen1Outdoor(mod, imported)
+  end
   for assetPath, imageData in pairs(visualSprites.assets) do
     Cache.putAtlas(assetPath, { imageData = imageData })
   end
-
-  VisualProfile.applyGen1Outdoor(mod, imported)
   VisualSpriteProfile.applyGen1(mod, visualSprites)
 
   mod.events:on("game.ready", function(ev)
-    -- The tileset override was applied during the merge phase. The event is
-    -- retained only for a user-facing status record that is safe after game
-    -- services initialize.
+    -- Content changes occur during the merge phase. This record is only a
+    -- user-facing status marker that is safe after game services initialize.
     if ev and ev.game then
       ev.game.fireredKantoVisuals = {
-        revision = imported.revision.id,
-        label = imported.revision.label,
+        revision = visualSprites.revision.id,
+        label = visualSprites.revision.label,
+        terrainPreview = terrainPreview,
       }
     end
   end)

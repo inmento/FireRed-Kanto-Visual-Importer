@@ -1,0 +1,10 @@
+# Local release artifacts
+*.zip
+
+# Player-provided ROM staging; never commit or redistribute source game data.
+baseroms/
+
+# Local validation output
+.validation/
+__pycache__/
+*.pyc

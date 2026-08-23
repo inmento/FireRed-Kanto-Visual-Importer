@@ -5,7 +5,7 @@ local Manifest = require("src.mods.Manifest")
 local raw = {
   id = "FIRERED_KANTO_VISUALS",
   name = "FireRed Kanto Visual Importer",
-  version = "0.1.4",
+  version = "0.1.5",
   api = 2,
   entry = "main.lua",
   profile = "overhaul",
@@ -13,10 +13,11 @@ local raw = {
   game_version = ">=0.2.3 <1.0.0",
   priority = 160,
   permissions = { "engine_internals" },
+  github = "inmento/FireRed-Kanto-Visual-Importer",
   dependencies = {},
   optional_dependencies = {},
   conflicts = {},
-  description = "Visual-only FireRed Kanto terrain importer.",
+  description = "Visual-only FireRed battle-visual importer with explicit diagnostic terrain preview.",
   required_imports = {
     {
       id = "firered_rom",
