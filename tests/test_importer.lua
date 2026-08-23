@@ -58,6 +58,7 @@ local assets = {
   image = function(path) return "base-image:" .. path end,
   imageData = function(path) return "base-data:" .. path end,
   exists = function() return false end,
+  resolve = function(path) return "base-resolve:" .. path end,
 }
 package.preload["src.render.Assets"] = function() return assets end
 
@@ -89,6 +90,12 @@ do
     "cache bridge did not expose generated path")
   check(assets.imageData("firered/generated/semantic/probe.png") == probe,
     "cache bridge returned wrong generated ImageData")
+  check(assets.resolve("firered/generated/semantic/probe.png") == probe,
+    "cache bridge did not expose generated ImageData to resolver-based UI")
+  check(love.graphics.newImage(assets.resolve("firered/generated/semantic/probe.png")).source == probe,
+    "resolver-based UI could not construct an image from generated ImageData")
+  check(assets.resolve("external.png") == "base-resolve:external.png",
+    "cache bridge intercepted a non-owned resolver path")
   check(assets.image("external.png") == "base-image:external.png",
     "cache bridge intercepted non-owned image path")
 
@@ -101,6 +108,8 @@ do
   FreshCache.installAssetBridge()
   check(assets.imageData("firered/generated/v024/semantic/probe.png") == freshProbe,
     "cache bridge did not refresh after importer reload")
+  check(assets.resolve("firered/generated/v024/semantic/probe.png") == freshProbe,
+    "resolver bridge did not refresh after importer reload")
 end
 
 print("FireRed Kanto Visual Importer foundation tests passed")

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0-rc.6 — Experimental intro-image resolver correction
+
+> **Pre-release branch:** this isolated corrective build follows rc.5. Stable **v0.2.4** remains the rollback release and the personal index is not modified.
+
+The rc.5 recording showed that FireRed battle art can decode, scale, and render successfully while the title screen and Oak’s "this is a Pokémon" demonstration remain blank. This was not a missing species front-sprite mapping: Gen1Recomp’s title and Oak screens resolve the same patched species `spriteFront` path used by battle, then construct a LÖVE image directly after resolution. The importer had held those source-derived images only in its private in-memory cache; resolver-based UI consumers therefore received a string path with no disk file behind it and rendered nothing.
+
+rc.6 extends the existing importer-owned asset bridge. For the `firered/generated/` namespace only, `Assets.resolve` returns the registered in-memory ImageData, which LÖVE accepts as an image constructor input. Title and Oak screens can therefore render the exact already-decoded FireRed asset without writing a ROM-derived PNG, changing engine/UI code, modifying intro text or sequencing, or touching battle mechanics. External paths and all non-importer assets continue through the normal resolver unchanged. This also covers any compatible starter-selection UI that resolves species fronts through the engine asset resolver.
+
+The recording confirmed that the compact Red’s House stairs are nearly aligned. rc.6 deliberately leaves their declared source crop and Gen 1 stair warp unchanged rather than making an unverified one-cell adjustment. It also retains rc.5’s coordinate-scoped Pallet policy: FireRed is limited to declared grass and compact building samples, while requested Gen 1 structures remain present. The palette-coherence path remains responsible only for eliminating an unintended monochrome layer when advanced colours are active.
+
+New coverage proves resolver-based direct image construction uses only the importer’s in-memory generated ImageData and that a fresh in-process mod reload refreshes this resolver bridge. The full active-branch suite, syntax checks, archive integrity, and protected-content scan passed. No source ROM, extracted art, generated source atlas, user media, or external code is committed or packaged.
+
 ## 0.3.0-rc.5 — Experimental battle-scale and palette-coherence correction
 
 > **Pre-release branch:** this isolated corrective build follows rc.4. Stable **v0.2.4** remains the rollback release and the personal index is not modified.

@@ -42,6 +42,7 @@ function Cache.installAssetBridge()
   local oldImage = Assets.image
   local oldImageData = Assets.imageData
   local oldExists = Assets.exists
+  local oldResolve = Assets.resolve
 
   Assets.imageData = function(path)
     if owns(path) then
@@ -50,6 +51,21 @@ function Cache.installAssetBridge()
       return imageData
     end
     return oldImageData(path)
+  end
+
+  -- Some Gen1Recomp UI states resolve a sprite path and call
+  -- love.graphics.newImage directly instead of Assets.image. LÖVE accepts
+  -- ImageData as a constructor input, so return our in-memory ImageData only
+  -- for the importer-owned namespace. This makes title/Oak/menu consumers see
+  -- the exact same private generated asset as the battle renderer without
+  -- writing FireRed-derived files or changing any engine/UI code.
+  Assets.resolve = function(path)
+    if owns(path) then
+      local imageData = bridge.imageDataCache[path]
+      assert(imageData, "FireRed importer: missing generated image " .. path)
+      return imageData
+    end
+    return oldResolve(path)
   end
 
   Assets.image = function(path)
