@@ -1,4 +1,4 @@
--- FireRed Kanto Visual Importer 0.2.1
+-- FireRed Kanto Visual Importer 0.2.2
 --
 -- One self-contained visual pipeline:
 --   1. verified local FireRed ROM reader;

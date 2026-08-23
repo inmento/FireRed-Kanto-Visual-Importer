@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2 — Dedicated FireRed layout-border rendering
+
+The first v0.2.1 gameplay evidence confirmed that the map profiles now build at the intended Gen 1 footprint. It also exposed a small-interior presentation error: Red’s House 1F reused the top-left **room** sample as its generated map border. Gen1Recomp repeats that border outside a compact 4×4 house map, so the room wall/floor texture filled most of the camera beyond the actual room.
+
+This update reads the verified FireRed `MapLayout` border pointer and its declared 2×2 dimensions, validates them against the profile, and builds the generated Gen 1 border row from FireRed’s dedicated border entries. The original Gen 1 border block still supplies its semantic collision tile, so this is visual-only: map dimensions, exits, stairs, objects, scripts, saves, and progression remain unchanged.
+
 ## 0.2.1 — Variable-size FireRed tileset repair
 
 This hotfix corrects the reason v0.2.0 could silently leave both initial map profiles on native Gen 1 artwork even after a verified FireRed v1.0 import and a full restart. The converter incorrectly treated every compressed FireRed secondary tileset as an exact 384-tile sheet. FireRed’s Pallet Town and Generic Building 1 sheets declare their real, smaller 4bpp size inside their LZ77 headers. The fixed-length check rejected those valid sheets before either profile could be registered.

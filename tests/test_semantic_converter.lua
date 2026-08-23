@@ -68,14 +68,17 @@ local function fixtureRom()
   local function putU32(offset, value) rom = put(rom, offset, u32(value)) end
   local function putU8(offset, value) rom = put(rom, offset, string.char(value)) end
 
-  local layout, mapHeader, mapData = 0x1000, 0x1800, 0x1900
+  local layout, mapHeader, mapData, borderData = 0x1000, 0x1800, 0x1900, 0x1A00
   local primaryHeader, secondaryHeader = 0x2000, 0x2100
   local primaryTiles, primaryPalettes, primaryMetatiles, primaryAttributes = 0x3000, 0x9000, 0xA000, 0xD000
   local secondaryTiles, secondaryPalettes, secondaryMetatiles, secondaryAttributes = 0xE000, 0x12000, 0x13000, 0x15000
 
   putU32(layout + 0, 10)
   putU32(layout + 4, 10)
+  putU32(layout + 8, pointer(borderData))
   putU32(layout + 12, pointer(mapData))
+  putU8(layout + 24, 2)
+  putU8(layout + 25, 2)
   putU32(layout + 16, pointer(primaryHeader))
   putU32(layout + 20, pointer(secondaryHeader))
   putU32(mapHeader, pointer(layout))
@@ -105,6 +108,7 @@ local profile = {
   expectedTarget = { width = 4, height = 4, tileset = "SYNTHETIC_TILESET" },
   source = {
     layout = layout, header = mapHeader, width = 10, height = 10,
+    borderWidth = 2, borderHeight = 2,
     primaryTileset = primaryHeader, secondaryTileset = secondaryHeader,
     originX = 1, originY = 1,
   },

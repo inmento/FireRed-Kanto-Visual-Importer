@@ -15,14 +15,14 @@ local expected = {
     map = "PALLET_TOWN",
     targetWidth = 10, targetHeight = 9, targetTileset = "OVERWORLD",
     layout = 0x082DD4C0, header = 0x08350618,
-    sourceWidth = 24, sourceHeight = 20,
+    sourceWidth = 24, sourceHeight = 20, borderWidth = 2, borderHeight = 2,
     primary = 0x082D4A94, secondary = 0x082D4AAC,
   },
   FIRERED_REDS_HOUSE_1F = {
     map = "REDS_HOUSE_1F",
     targetWidth = 4, targetHeight = 4, targetTileset = "REDS_HOUSE_1",
     layout = 0x082D5200, header = 0x08350D50,
-    sourceWidth = 13, sourceHeight = 10,
+    sourceWidth = 13, sourceHeight = 10, borderWidth = 2, borderHeight = 2,
     primary = 0x082D4BB4, secondary = 0x082D4C74,
   },
 }
@@ -43,6 +43,8 @@ for _, profile in Profiles.each() do
     profile.id .. " FireRed layout/header address changed")
   check(profile.source.width == want.sourceWidth and profile.source.height == want.sourceHeight,
     profile.id .. " FireRed layout dimensions changed")
+  check(profile.source.borderWidth == want.borderWidth and profile.source.borderHeight == want.borderHeight,
+    profile.id .. " FireRed layout border dimensions changed")
   check(profile.source.primaryTileset == want.primary and profile.source.secondaryTileset == want.secondary,
     profile.id .. " FireRed tileset address changed")
 

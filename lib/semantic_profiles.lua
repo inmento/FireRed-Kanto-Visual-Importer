@@ -18,6 +18,8 @@ Profiles.PALLET_TOWN = {
     header = 0x08350618,
     width = 24,
     height = 20,
+    borderWidth = 2,
+    borderHeight = 2,
     primaryTileset = 0x082D4A94, -- gTileset_General
     secondaryTileset = 0x082D4AAC, -- gTileset_PalletTown
     -- Pallet's playable town grid begins after the 1-cell decorative source
@@ -45,6 +47,8 @@ Profiles.REDS_HOUSE_1F = {
     header = 0x08350D50,
     width = 13,
     height = 10,
+    borderWidth = 2,
+    borderHeight = 2,
     primaryTileset = 0x082D4BB4, -- gTileset_Building
     secondaryTileset = 0x082D4C74, -- gTileset_GenericBuilding1
     -- This crop keeps the FireRed 1F room and front-door row locked to Red's

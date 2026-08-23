@@ -152,9 +152,12 @@ local function decodeLayout(reader, profile)
   local layoutOffset = reader:offsetFromAddress(source.layout, profile.id .. " layout")
   local width = reader:u32(layoutOffset, profile.id .. " layout width")
   local height = reader:u32(layoutOffset + 4, profile.id .. " layout height")
+  local borderAddress = reader:u32(layoutOffset + 8, profile.id .. " border block data")
   local mapAddress = reader:u32(layoutOffset + 12, profile.id .. " map block data")
   local primaryAddress = reader:u32(layoutOffset + 16, profile.id .. " primary tileset")
   local secondaryAddress = reader:u32(layoutOffset + 20, profile.id .. " secondary tileset")
+  local borderWidth = reader:u8(layoutOffset + 24, profile.id .. " border width")
+  local borderHeight = reader:u8(layoutOffset + 25, profile.id .. " border height")
   if width ~= source.width or height ~= source.height then
     fail(('%s layout dimensions are %dx%d; expected %dx%d'):format(profile.id,
       width, height, source.width, source.height))
@@ -166,12 +169,26 @@ local function decodeLayout(reader, profile)
   if reader:u32(headerOffset, profile.id .. " map-header layout pointer") ~= source.layout then
     fail(profile.id .. " map header does not point at the expected layout")
   end
+  if borderWidth ~= source.borderWidth or borderHeight ~= source.borderHeight then
+    fail(('%s layout border is %dx%d; expected %dx%d'):format(profile.id,
+      borderWidth, borderHeight, source.borderWidth, source.borderHeight))
+  end
+  if borderWidth < 2 or borderHeight < 2 then
+    fail(profile.id .. " layout border is too small for a 32px target block")
+  end
   local mapOffset = reader:offsetFromAddress(mapAddress, profile.id .. " map block data")
-  local entries = {}
+  local borderOffset = reader:offsetFromAddress(borderAddress, profile.id .. " border block data")
+  local entries, borderEntries = {}, {}
   for index = 0, width * height - 1 do
     entries[index + 1] = reader:u16(mapOffset + index * 2, profile.id .. " map block")
   end
-  return { width = width, height = height, entries = entries }
+  for index = 0, borderWidth * borderHeight - 1 do
+    borderEntries[index + 1] = reader:u16(borderOffset + index * 2, profile.id .. " border block")
+  end
+  return {
+    width = width, height = height, entries = entries,
+    borderWidth = borderWidth, borderHeight = borderHeight, borderEntries = borderEntries,
+  }
 end
 
 local function sourceCell(layout, x, y, label)
@@ -302,6 +319,11 @@ local function sourceTilesetFor(primary, secondary, mapEntry)
   fail("source map entry references an unavailable FireRed metatile")
 end
 
+local function paintSourceMetatile(atlas, primary, secondary, mapEntry, left, top, label)
+  local tileset, metatile = sourceTilesetFor(primary, secondary, mapEntry)
+  paintMetatile(atlas, tileset, metatile, left, top, label)
+end
+
 local function targetBlockPosition(index)
   local tileBaseX = (index % 16) * 4
   local tileBaseY = math.floor(index / 16) * 4
@@ -320,15 +342,46 @@ local function composeProfileBlock(atlas, layout, primary, secondary, profile, t
       local x = sourceBaseX + sourceX
       local y = sourceBaseY + sourceY
       local mapEntry = sourceCell(layout, x, y, profile.id)
-      local tileset, metatile = sourceTilesetFor(primary, secondary, mapEntry)
-      paintMetatile(atlas, tileset, metatile, pixelX + sourceX * 16, pixelY + sourceY * 16,
-        profile.id)
+      paintSourceMetatile(atlas, primary, secondary, mapEntry,
+        pixelX + sourceX * 16, pixelY + sourceY * 16, profile.id)
     end
   end
 
   local baseRow = base.blocks[(oldBlock or 0) + 1]
   if type(baseRow) ~= "table" or #baseRow ~= BLOCK_TILES then
     fail(profile.id .. " target map references an unavailable Gen 1 block")
+  end
+  local oldCollisionTile = baseRow[COLLISION_TILE_INDEX]
+  local newCollisionTile = semanticTile(atlas, semanticState, oldCollisionTile,
+    pixelX, pixelY + 24, semanticStart)
+  local block = {}
+  for tileY = 0, 3 do
+    for tileX = 0, 3 do
+      block[tileY * 4 + tileX + 1] = (tileBaseY + tileY) * TILES_PER_ROW + tileBaseX + tileX
+    end
+  end
+  block[COLLISION_TILE_INDEX] = newCollisionTile
+  return block
+end
+
+local function composeBorderBlock(atlas, layout, primary, secondary, profile, blockIndex,
+    oldBlock, base, semanticState, semanticStart)
+  local pixelX, pixelY, tileBaseX, tileBaseY = targetBlockPosition(blockIndex)
+  -- A small Gen 1 interior draws its border repeatedly outside the 4×4 map.
+  -- Sample FireRed's dedicated MapLayout border (not the room's top-left map
+  -- cells) so the repeated edge remains a background frame instead of a wall
+  -- texture copied across the whole camera.
+  for sourceY = 0, 1 do
+    for sourceX = 0, 1 do
+      local mapEntry = layout.borderEntries[sourceY * layout.borderWidth + sourceX + 1] % 0x400
+      paintSourceMetatile(atlas, primary, secondary, mapEntry,
+        pixelX + sourceX * 16, pixelY + sourceY * 16, profile.id .. " border")
+    end
+  end
+
+  local baseRow = base.blocks[(oldBlock or 0) + 1]
+  if type(baseRow) ~= "table" or #baseRow ~= BLOCK_TILES then
+    fail(profile.id .. " target map references an unavailable Gen 1 border block")
   end
   local oldCollisionTile = baseRow[COLLISION_TILE_INDEX]
   local newCollisionTile = semanticTile(atlas, semanticState, oldCollisionTile,
@@ -407,10 +460,10 @@ function Converter.build(profile, rom, targetMap, targetTileset)
   end
 
   -- The existing border remains a gameplay border. Its appearance uses the
-  -- profile's top-left sample, while its collision semantics stay tied to the
-  -- original target-map border block.
-  blocks[totalBlocks] = composeProfileBlock(atlas, layout, primary, secondary, profile,
-    0, 0, blockCount, targetMap.borderBlock or 0, targetTileset, semanticState, semanticStart)
+  -- profile's dedicated FireRed layout-border cells, while its collision
+  -- semantics stay tied to the original target-map border block.
+  blocks[totalBlocks] = composeBorderBlock(atlas, layout, primary, secondary, profile,
+    blockCount, targetMap.borderBlock or 0, targetTileset, semanticState, semanticStart)
 
   if not semanticState.grassTile and targetTileset.grassTile ~= nil then
     fail(profile.id .. " did not encounter the target map's grass collision tile")
