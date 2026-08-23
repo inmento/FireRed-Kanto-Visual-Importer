@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.5-rc.3 — Experimental full-room composition
+
+The user clarified that the Red black-and-white reference, FireRed colored reference, and rc.2 gameplay video must be treated as one composition problem. The role of each visual region matters more than moving one feature independently. rc.3 therefore replaces the remaining coarse-crop fallback across **every** Red’s House 1F target block with an explicit bounded 4×4 source-composition table.
+
+The table preserves the required Red roles in their existing gameplay footprint: upper-left television/kitchen, upper-right stairs, central Mom/table, and bottom-center front exit. Supporting blocks are explicit FireRed wall, floor, furniture, and corridor context samples rather than an unreviewed `origin + target` crop. Target map coordinates, events, collision, four-cell semantic tile locks, warps, and the safe house-to-Pallet exit path are unchanged. This remains an experimental visual-only pre-release; stable **v0.2.4** remains the rollback release.
+
 ## 0.2.5-rc.2 — Experimental TV and kitchen alignment
 
 The user supplied Red/Yellow and FireRed 1F/2F visual references and a v0.2.5-rc.1 gameplay recording. The first experiment improved the room but left the television, kitchen/window zone, and other upper-wall fixtures shifted. FireRed’s public 1F event metadata places the television interaction at source cell `(6,1)`. Because one generated target block samples a 2×2 source-cell square, that feature belongs in target block `(0,0)` only when the source base is `(5,0)`.

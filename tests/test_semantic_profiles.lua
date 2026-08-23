@@ -30,11 +30,14 @@ local expected = {
     sourceWidth = 13, sourceHeight = 10, borderWidth = 2, borderHeight = 2,
     primary = 0x082D4BB4, secondary = 0x082D4C74,
     overrides = {
-      ["0,0"] = { x = 5, y = 0 },
-      ["1,0"] = { x = 7, y = 0 },
-      ["3,0"] = { x = 9, y = 1 },
-      ["2,2"] = { x = 7, y = 3 },
-      ["1,3"] = { x = 4, y = 7 },
+      ["0,0"] = { x = 5, y = 0 }, ["1,0"] = { x = 7, y = 0 },
+      ["2,0"] = { x = 8, y = 0 }, ["3,0"] = { x = 9, y = 1 },
+      ["0,1"] = { x = 3, y = 2 }, ["1,1"] = { x = 5, y = 2 },
+      ["2,1"] = { x = 7, y = 2 }, ["3,1"] = { x = 9, y = 3 },
+      ["0,2"] = { x = 3, y = 4 }, ["1,2"] = { x = 5, y = 4 },
+      ["2,2"] = { x = 7, y = 3 }, ["3,2"] = { x = 9, y = 4 },
+      ["0,3"] = { x = 2, y = 6 }, ["1,3"] = { x = 4, y = 7 },
+      ["2,3"] = { x = 6, y = 6 }, ["3,3"] = { x = 8, y = 6 },
     },
   },
 }
@@ -68,6 +71,11 @@ for _, profile in Profiles.each() do
       and source.originY + target.height * 2 <= source.height,
     profile.id .. " normal source crop exceeds the declared FireRed layout")
 
+  local expectedOverrideCount, actualOverrideCount = 0, 0
+  for _ in pairs(want.overrides or {}) do expectedOverrideCount = expectedOverrideCount + 1 end
+  for _ in pairs(source.overrides or {}) do actualOverrideCount = actualOverrideCount + 1 end
+  check(actualOverrideCount == expectedOverrideCount,
+    profile.id .. " override count changed")
   for key, wantPoint in pairs(want.overrides or {}) do
     local actual = (source.overrides or {})[key]
     check(actual and actual.x == wantPoint.x and actual.y == wantPoint.y,

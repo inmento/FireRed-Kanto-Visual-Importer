@@ -61,17 +61,31 @@ Profiles.REDS_HOUSE_1F = {
     -- cannot drift a whole 32px target block while gameplay stays Gen 1-owned.
     originX = 2,
     originY = 2,
+    -- Experimental full-room composition. Red and FireRed arrange the same
+    -- roles differently, so every 32px Red block gets an explicit bounded
+    -- FireRed sample rather than inheriting a generic linear crop. The target
+    -- map still owns all movement, interaction, and warp coordinates.
     overrides = {
-      -- Upper-left kitchen/window zone. FireRed's TV interaction is (6,1),
-      -- therefore target block (0,0) must sample source base (5,0).
-      ["0,0"] = { x = 5, y = 0 },
+      -- Top wall: TV/kitchen at left, then counter/furniture context, stairs.
+      ["0,0"] = { x = 5, y = 0 }, -- contains FireRed TV (6,1)
       ["1,0"] = { x = 7, y = 0 },
-      -- FireRed stair warp is (10,2); Gen 1's is in target block (3,0).
-      ["3,0"] = { x = 9, y = 1 },
-      -- FireRed Mom/table center (8,4) -> Gen 1 Mom/table block (2,2).
-      ["2,2"] = { x = 7, y = 3 },
-      -- FireRed front exits (4,8)/(5,8) -> Gen 1 front-exit block (1,3).
-      ["1,3"] = { x = 4, y = 7 },
+      ["2,0"] = { x = 8, y = 0 },
+      ["3,0"] = { x = 9, y = 1 }, -- contains FireRed stair (10,2)
+      -- Upper room: wall continuation and approach corridor.
+      ["0,1"] = { x = 3, y = 2 },
+      ["1,1"] = { x = 5, y = 2 },
+      ["2,1"] = { x = 7, y = 2 },
+      ["3,1"] = { x = 9, y = 3 },
+      -- Living area: left context, table/chairs, Mom/table, stairs context.
+      ["0,2"] = { x = 3, y = 4 },
+      ["1,2"] = { x = 5, y = 4 },
+      ["2,2"] = { x = 7, y = 3 }, -- around FireRed Mom/table (8,4)
+      ["3,2"] = { x = 9, y = 4 },
+      -- Lower room: walkable floor frame, front exit, and right-side context.
+      ["0,3"] = { x = 2, y = 6 },
+      ["1,3"] = { x = 4, y = 7 }, -- contains FireRed exits (4,8)/(5,8)
+      ["2,3"] = { x = 6, y = 6 },
+      ["3,3"] = { x = 8, y = 6 },
     },
   },
   outdoor = false,
