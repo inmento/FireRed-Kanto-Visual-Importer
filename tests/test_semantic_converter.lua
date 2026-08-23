@@ -66,6 +66,9 @@ local function fixtureRom()
   local rom = string.rep("\0", Addresses.ROM_SIZE)
   local function pointer(offset) return base + offset end
   local function putU32(offset, value) rom = put(rom, offset, u32(value)) end
+  local function putU16(offset, value)
+    rom = put(rom, offset, string.char(value % 0x100, math.floor(value / 0x100) % 0x100))
+  end
   local function putU8(offset, value) rom = put(rom, offset, string.char(value)) end
 
   local layout, mapHeader, mapData, borderData = 0x1000, 0x1800, 0x1900, 0x1A00
@@ -97,6 +100,11 @@ local function fixtureRom()
   putU32(secondaryHeader + 8, pointer(secondaryPalettes))
   putU32(secondaryHeader + 12, pointer(secondaryMetatiles))
   putU32(secondaryHeader + 20, pointer(secondaryAttributes))
+
+  -- FireRed metatile entries address the shared field-background tile space:
+  -- primary graphics occupy 0..639 and secondary graphics begin at 640. Make
+  -- primary metatile 0 reference secondary tile 0/global tile 640 at palette 7.
+  putU16(primaryMetatiles + 0, 0x7000 + 640)
   return rom, pointer(layout), pointer(mapHeader), pointer(primaryHeader), pointer(secondaryHeader),
     primaryTiles, secondaryTiles
 end
@@ -145,6 +153,31 @@ check(converted.blocks[1][15] == converted.warpTiles[1],
   "bottom-right movement cell must retain its original warp semantic tile")
 check(converted.semanticTileCount > 1,
   "distinct movement cells must receive independent visual-semantic tile locks")
+check(converted.blocks[1][1] ~= nil,
+  "a primary metatile using global secondary tile 640 must render successfully")
+
+-- Outdoor profiles may fit an entire verified source layout into a smaller Gen 1
+-- map footprint, while preserving the exact target-map movement semantics.
+local layoutFitProfile = {}
+for key, value in pairs(profile) do layoutFitProfile[key] = value end
+layoutFitProfile.source = {}
+for key, value in pairs(profile.source) do layoutFitProfile.source[key] = value end
+layoutFitProfile.source.visualMode = "layout-fit"
+local layoutFitConverted = Converter.build(layoutFitProfile, rom, targetMap, targetTileset)
+check(layoutFitConverted.blocks[1][5] == layoutFitConverted.walkable[1]
+    and layoutFitConverted.blocks[1][7] == layoutFitConverted.doorTiles[1]
+    and layoutFitConverted.blocks[1][13] == layoutFitConverted.grassTile
+    and layoutFitConverted.blocks[1][15] == layoutFitConverted.warpTiles[1],
+  "layout-fit visuals must keep all four original movement-cell roles")
+
+local unknownMode = {}
+for key, value in pairs(layoutFitProfile) do unknownMode[key] = value end
+unknownMode.source = {}
+for key, value in pairs(layoutFitProfile.source) do unknownMode.source[key] = value end
+unknownMode.source.visualMode = "unknown-mode"
+local modeOk, modeErr = pcall(Converter.build, unknownMode, rom, targetMap, targetTileset)
+check(not modeOk and tostring(modeErr):find("unknown visual mode"),
+  "unrecognized profile visual modes must fail closed")
 
 -- FireRed secondary sheets are not universally 384 tiles. Exercise the
 -- compressed path with one 8x8 tile (32 decoded bytes) in both tilesets; this

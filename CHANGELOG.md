@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0-rc.1 — Experimental Pallet full-layout reconstruction
+
+> **Pre-release branch:** this opt-in overworld reconstruction build is separate from the earlier house-composition experiments. Stable **v0.2.4** remains the rollback release and is not modified.
+
+The user supplied a private FireRed English v1.0 source input for local analysis. Its map grid was verified against the public FireRed decompilation’s `PalletTown/map.bin` without exporting any source graphics or ROM bytes. The prior converter was exposed to have two limitations that initial small crops did not reveal. First, it indexed every metatile tile number into its own tileset sheet, but FireRed field metatiles address the combined 0–1023 background tile space: primary tiles occupy 0–639 and secondary tiles occupy 640–1023. It also required the secondary palette-slot table for global palette IDs 7–15. Second, the outdoor profile mixed a broad crop with one local doorway override rather than reconstructing one coherent town scene.
+
+This pre-release corrects the combined primary/secondary tile-bank and palette routing, then fits the verified complete 24×20 FireRed Pallet layout into the unchanged 10×9 Gen 1 Pallet footprint using a bounded nearest-neighbor coordinate transform. The generated map still restores every original Gen 1 movement, grass, door, warp, water, shore, counter, object, script, save, and connection semantic at its existing coordinate. A private in-memory build completed successfully after the correction; no GBA file, extracted art, generated source cache, or media is included in source control or the package.
+
 ## 0.2.4 — Generated-atlas cache isolation
 
 The v0.2.3 recording confirmed that Red’s House 1F can now exit safely, but Pallet Town displayed FireRed **interior** visuals—yellow floor, dining table, and furniture—while retaining its outdoor NPC/script context. The FireRed Pallet source layout and tile declarations are distinct from the Player’s House profile, so this was treated as a generated-atlas cache-lifetime issue rather than as a coordinate or collision change.

@@ -22,18 +22,13 @@ Profiles.PALLET_TOWN = {
     borderHeight = 2,
     primaryTileset = 0x082D4A94, -- gTileset_General
     secondaryTileset = 0x082D4AAC, -- gTileset_PalletTown
-    -- Pallet's playable town grid begins after the 1-cell decorative source
-    -- border. Two source metatiles fill one Gen 1 target block on each axis.
-    -- The profile deliberately samples the source map coordinate system, never
-    -- matches unrelated Gen 1/FireRed block IDs.
+    -- Reconstruct the complete verified 24×20 FireRed town layout into the
+    -- fixed 10×9 Gen 1 town footprint. This keeps Pallet's outdoor landmarks
+    -- in one bounded transform instead of mixing a broad crop with door-only
+    -- overrides. Collision, warps, grass, and all map coordinates remain Gen 1-owned.
     originX = 1,
     originY = 2,
-    -- The original games place Oak's Lab one source cell farther east than its
-    -- Gen 1 block footprint. Keep the real Gen 1 Oak-Lab warp block at (6,5)
-    -- while sampling the FireRed Lab doorway at source cells 15..16, 12..13.
-    overrides = {
-      ["6,5"] = { x = 15, y = 12 },
-    },
+    visualMode = "layout-fit",
   },
   outdoor = true,
 }

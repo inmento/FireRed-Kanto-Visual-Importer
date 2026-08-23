@@ -135,7 +135,10 @@ local function decodeTileset(reader, address, kind, label)
   local expectedSecondary = not isPrimary
   local tileCount = isPrimary and PRIMARY_TILES or SECONDARY_TILES
   local metatileCount = isPrimary and PRIMARY_METATILES or SECONDARY_METATILES
-  local paletteCount = isPrimary and PRIMARY_PALETTES or SECONDARY_PALETTES
+  -- Metatile palette IDs are global BG palette slots. Primary owns slots 0..6;
+  -- a secondary tileset carries the complete palette-slot table because the
+  -- engine loads its visible palettes from slot 7 onward.
+  local paletteCount = isPrimary and PRIMARY_PALETTES or 16
   local header = decodeTilesetHeader(reader, address, label)
   if header.secondary ~= expectedSecondary then
     fail(('%s has an unexpected primary/secondary tileset flag'):format(label))
@@ -203,29 +206,42 @@ local function sourceCell(layout, x, y, label)
   return layout.entries[y * layout.width + x + 1] % 0x400
 end
 
-local function tilePixel(tiles, tile, x, y)
-  local byteIndex = tile * 32 + y * 4 + math.floor(x / 2) + 1
-  local byte = tiles:byte(byteIndex)
-  if not byte then fail("source tile index is outside decoded tileset") end
+local function tilePixel(primary, secondary, tile, x, y)
+  -- FireRed copies the primary sheet to VRAM tiles 0..639 and the active
+  -- secondary sheet to tiles 640..1023. Metatile entries refer to that combined
+  -- VRAM index space even when the metatile itself belongs to the primary table.
+  local bank, localTile, bankLabel
+  if tile < PRIMARY_TILES then
+    bank, localTile, bankLabel = primary, tile, "primary"
+  else
+    bank, localTile, bankLabel = secondary, tile - PRIMARY_TILES, "secondary"
+  end
+  local byteIndex = localTile * 32 + y * 4 + math.floor(x / 2) + 1
+  local byte = bank.tiles:byte(byteIndex)
+  if not byte then
+    fail(("source %s tile %d (global %d) is outside the decoded %d-tile sheet"):format(
+      bankLabel, localTile, tile, #bank.tiles / 32))
+  end
   if x % 2 == 0 then return byte % 16 end
   return math.floor(byte / 16) % 16
 end
 
-local function paintMetatile(imageData, tileset, metatile, left, top, label)
-  local entries = tileset.metatiles[metatile]
+local function paintMetatile(imageData, primary, secondary, metatileTileset, metatile, left, top, label)
+  local entries = metatileTileset.metatiles[metatile]
   if not entries then fail(label .. " references an unavailable source metatile") end
   -- A Gen III metatile holds two 2×2 layers. The transparent upper layer is
   -- drawn second; each original FireRed 8×8 cell remains exactly 8×8 here.
   for layer = 0, 1 do
     for cell = 0, 3 do
       local entry = entries[layer * 4 + cell + 1]
-      local palette = tileset.palettes[entry.palette] or tileset.palettes[0]
-      if not palette then fail(label .. " has no usable palette") end
+      local paletteBank = entry.palette < PRIMARY_PALETTES and primary or secondary
+      local palette = paletteBank.palettes[entry.palette]
+      if not palette then fail(label .. " has no usable palette for global slot " .. entry.palette) end
       for sy = 0, 7 do
         for sx = 0, 7 do
           local sourceX = entry.hflip and (7 - sx) or sx
           local sourceY = entry.vflip and (7 - sy) or sy
-          local colorIndex = tilePixel(tileset.tiles, entry.tile, sourceX, sourceY)
+          local colorIndex = tilePixel(primary, secondary, entry.tile, sourceX, sourceY)
           if layer == 0 or colorIndex ~= 0 then
             local color = palette[colorIndex] or palette[0]
             imageData:setPixel(left + (cell % 2) * 8 + sx,
@@ -330,7 +346,42 @@ end
 
 local function paintSourceMetatile(atlas, primary, secondary, mapEntry, left, top, label)
   local tileset, metatile = sourceTilesetFor(primary, secondary, mapEntry)
-  paintMetatile(atlas, tileset, metatile, left, top, label)
+  paintMetatile(atlas, primary, secondary, tileset, metatile, left, top, label)
+end
+
+-- Build a temporary 8px-native visual canvas for one declared FireRed layout.
+-- It is used only by profiles that explicitly opt into a whole-layout fit; no
+-- source graphics are persisted or exposed outside this in-memory build.
+local function paintLayoutCanvas(layout, primary, secondary, profile)
+  local width, height = layout.width * 16, layout.height * 16
+  local canvas = love.image.newImageData(width, height)
+  canvas:mapPixel(function() return 0, 0, 0, 1 end)
+  for y = 0, layout.height - 1 do
+    for x = 0, layout.width - 1 do
+      paintSourceMetatile(canvas, primary, secondary, sourceCell(layout, x, y, profile.id),
+        x * 16, y * 16, profile.id .. " layout-fit")
+    end
+  end
+  return canvas
+end
+
+local function paintLayoutFitBlock(atlas, canvas, targetMap, targetX, targetY, pixelX, pixelY)
+  -- Fit the declared FireRed layout to the fixed Gen 1 target-map footprint.
+  -- This is a per-pixel nearest-neighbor coordinate transform, not a global
+  -- image resize: output remains tile-aligned and semantic cells are restored
+  -- afterwards from the original Gen 1 target block.
+  local targetWidth = targetMap.width * 32
+  local targetHeight = targetMap.height * 32
+  local sourceWidth, sourceHeight = canvas:getWidth(), canvas:getHeight()
+  local startX, startY = targetX * 32, targetY * 32
+  for dy = 0, 31 do
+    local sourceY = math.min(sourceHeight - 1, math.floor((startY + dy) * sourceHeight / targetHeight))
+    for dx = 0, 31 do
+      local sourceX = math.min(sourceWidth - 1, math.floor((startX + dx) * sourceWidth / targetWidth))
+      local r, g, b, a = canvas:getPixel(sourceX, sourceY)
+      atlas:setPixel(pixelX + dx, pixelY + dy, r, g, b, a)
+    end
+  end
 end
 
 local function targetBlockPosition(index)
@@ -339,20 +390,25 @@ local function targetBlockPosition(index)
   return tileBaseX * TILE_SIZE, tileBaseY * TILE_SIZE, tileBaseX, tileBaseY
 end
 
-local function composeProfileBlock(atlas, layout, primary, secondary, profile, targetX, targetY,
+local function composeProfileBlock(atlas, layout, primary, secondary, profile, targetMap, layoutCanvas, targetX, targetY,
     blockIndex, oldBlock, base, semanticState, semanticStart)
   local pixelX, pixelY, tileBaseX, tileBaseY = targetBlockPosition(blockIndex)
-  local overrides = profile.source.overrides or {}
-  local override = overrides[targetX .. "," .. targetY]
-  local sourceBaseX = override and override.x or (profile.source.originX + targetX * 2)
-  local sourceBaseY = override and override.y or (profile.source.originY + targetY * 2)
-  for sourceY = 0, 1 do
-    for sourceX = 0, 1 do
-      local x = sourceBaseX + sourceX
-      local y = sourceBaseY + sourceY
-      local mapEntry = sourceCell(layout, x, y, profile.id)
-      paintSourceMetatile(atlas, primary, secondary, mapEntry,
-        pixelX + sourceX * 16, pixelY + sourceY * 16, profile.id)
+  if profile.source.visualMode == "layout-fit" then
+    paintLayoutFitBlock(atlas, assert(layoutCanvas, profile.id .. " layout-fit canvas is missing"),
+      targetMap, targetX, targetY, pixelX, pixelY)
+  else
+    local overrides = profile.source.overrides or {}
+    local override = overrides[targetX .. "," .. targetY]
+    local sourceBaseX = override and override.x or (profile.source.originX + targetX * 2)
+    local sourceBaseY = override and override.y or (profile.source.originY + targetY * 2)
+    for sourceY = 0, 1 do
+      for sourceX = 0, 1 do
+        local x = sourceBaseX + sourceX
+        local y = sourceBaseY + sourceY
+        local mapEntry = sourceCell(layout, x, y, profile.id)
+        paintSourceMetatile(atlas, primary, secondary, mapEntry,
+          pixelX + sourceX * 16, pixelY + sourceY * 16, profile.id)
+      end
     end
   end
 
@@ -441,10 +497,16 @@ function Converter.build(profile, rom, targetMap, targetTileset)
   local secondary = decodeTileset(reader, profile.source.secondaryTileset, "secondary",
     profile.id .. " secondary tileset")
 
-  local sourceCellsWide = profile.source.originX + targetMap.width * 2
-  local sourceCellsHigh = profile.source.originY + targetMap.height * 2
-  if sourceCellsWide > layout.width or sourceCellsHigh > layout.height then
-    fail(profile.id .. " profile crop exceeds its FireRed layout")
+  local layoutFit = profile.source.visualMode == "layout-fit"
+  if profile.source.visualMode and not layoutFit then
+    fail(profile.id .. " has an unknown visual mode")
+  end
+  if not layoutFit then
+    local sourceCellsWide = profile.source.originX + targetMap.width * 2
+    local sourceCellsHigh = profile.source.originY + targetMap.height * 2
+    if sourceCellsWide > layout.width or sourceCellsHigh > layout.height then
+      fail(profile.id .. " profile crop exceeds its FireRed layout")
+    end
   end
 
   -- One visual block per existing target-map block, plus one border block. The
@@ -463,13 +525,14 @@ function Converter.build(profile, rom, targetMap, targetTileset)
   atlas:mapPixel(function() return 0, 0, 0, 1 end)
 
   local semanticState = newSemantics(targetTileset)
+  local layoutCanvas = layoutFit and paintLayoutCanvas(layout, primary, secondary, profile) or nil
   local blocks, remappedMapBlocks = {}, {}
   for by = 0, targetMap.height - 1 do
     for bx = 0, targetMap.width - 1 do
       local index = by * targetMap.width + bx
       local oldBlock = targetMap.blocks[index + 1]
       blocks[index + 1] = composeProfileBlock(atlas, layout, primary, secondary, profile,
-        bx, by, index, oldBlock, targetTileset, semanticState, semanticStart)
+        targetMap, layoutCanvas, bx, by, index, oldBlock, targetTileset, semanticState, semanticStart)
       remappedMapBlocks[index + 1] = index
     end
   end

@@ -17,6 +17,7 @@ local expected = {
     layout = 0x082DD4C0, header = 0x08350618,
     sourceWidth = 24, sourceHeight = 20, borderWidth = 2, borderHeight = 2,
     primary = 0x082D4A94, secondary = 0x082D4AAC,
+    visualMode = "layout-fit",
   },
   FIRERED_REDS_HOUSE_1F = {
     map = "REDS_HOUSE_1F",
@@ -24,6 +25,7 @@ local expected = {
     layout = 0x082D5200, header = 0x08350D50,
     sourceWidth = 13, sourceHeight = 10, borderWidth = 2, borderHeight = 2,
     primary = 0x082D4BB4, secondary = 0x082D4C74,
+    visualMode = nil,
   },
 }
 
@@ -47,14 +49,18 @@ for _, profile in Profiles.each() do
     profile.id .. " FireRed layout border dimensions changed")
   check(profile.source.primaryTileset == want.primary and profile.source.secondaryTileset == want.secondary,
     profile.id .. " FireRed tileset address changed")
+  check(profile.source.visualMode == want.visualMode,
+    profile.id .. " visual reconstruction mode changed")
 
   local source = profile.source
   local target = profile.expectedTarget
   check(source.originX >= 0 and source.originY >= 0,
     profile.id .. " source origin must be non-negative")
-  check(source.originX + target.width * 2 <= source.width
-      and source.originY + target.height * 2 <= source.height,
-    profile.id .. " normal source crop exceeds the declared FireRed layout")
+  if source.visualMode ~= "layout-fit" then
+    check(source.originX + target.width * 2 <= source.width
+        and source.originY + target.height * 2 <= source.height,
+      profile.id .. " normal source crop exceeds the declared FireRed layout")
+  end
 
   for key, point in pairs(source.overrides or {}) do
     local x, y = key:match("^(%-?%d+),(%-?%d+)$")
