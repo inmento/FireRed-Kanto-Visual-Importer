@@ -60,3 +60,7 @@ Please report a screenshot or short clip with the named map and the visible prob
 This importer does **not** port FireRed maps or alter Gen 1 collision, warps, NPCs, scripts, encounters, items, story progression, save data, or gameplay mechanics. It changes only a supported map’s generated visual tileset. Its source reader uses the player’s local verified ROM at runtime; no Nintendo asset or ROM-derived cache is included in public releases.
 
 The architecture was informed by the public import and cache-boundary practices of [Crystal 251](https://github.com/Deftones565/gen1recomp-mod-crystal-251) and [Stadium Battle FX](https://github.com/anxiousintrovert/StadiumBattleFX), without using either project’s code or requiring either mod.
+
+## License
+
+Unless a file or third-party notice says otherwise, this repository's original source code, configuration, tests, and documentation are licensed under the [MIT License](LICENSE). Read [LICENSE_SCOPE.md](LICENSE_SCOPE.md) for attribution guidance and third-party, asset, user-supplied-source, and game-IP boundaries.
