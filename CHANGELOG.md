@@ -1,5 +1,10 @@
 ## 2026-10-04 — Gen1Recomp 0.3.51 compatibility refresh
 
+## 2026-10-06 — Gen1Recomp 0.3.57 compatibility refresh
+- Raised the manifest engine requirement to `>=0.3.57` while preserving any existing upper bound.
+- Audited the Gen1Recomp v0.3.54–v0.3.57 release and source diff; no Gen 1/Gen 2 public hook or Mod API change used by this mod required a Lua code change.
+- This is a compatibility metadata/documentation refresh; gameplay behavior, save formats, assets, and progression rules are unchanged.
+
 - Updated the manifest engine requirement to `>=0.3.51` for the current Mod API 2 runtime.
 - Revalidated the existing public hook/registry surface without changing gameplay behavior, assets, save formats, or progression rules.
 - This entry is a compatibility maintenance update; install the matching release build before testing.

@@ -6,7 +6,7 @@
   "entry": "main.lua",
   "profile": "overhaul",
   "category": "GRAPHICS",
-  "game_version": ">=0.3.51 <1.0.0",
+  "game_version": ">=0.3.57 <1.0.0",
   "priority": 160,
   "permissions": [
     "engine_internals"
